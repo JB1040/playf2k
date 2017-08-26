@@ -1,0 +1,39 @@
+@* login Template File *@
+@(forme: Form[UserController.Login])
+
+@import helper._
+
+@main("Login") {
+	@header()
+	<div _ngcontent-c1="" class="F2K-column">
+    	<div _ngcontent-c1="" class="clearfix featured" style="margin-bottom: 40px">
+    	<br>
+    		<h1 style="text-align:center;">Login</h1>
+    		<br><br>
+    		<div style="text-align:center">
+				@helper.form(routes.UserController.doLogin()) {
+					@if(forme.hasGlobalErrors) {
+    					<p class="error">
+        					@forme.globalError.message
+   						</p>
+					}
+			
+
+					@CSRF.formField
+					<input type="hidden" name="previous" value="@forme("previous").getValue().orElse("")"><br>					
+					@for(error <- forme("username").errors) {
+    					Username is required.<br>
+					}		
+					<input type="text" name="username" placeholder="Username" value="@forme("username").getValue().orElse("")"><br>
+					
+					@for(error <- forme("password").errors) {
+    					password is required.<br>
+					}
+					<input type="password" name="password" placeholder="Password"><br>
+					<button type="submit">Login</button>
+				}
+			</div>
+		</div>
+    </div>
+}
+

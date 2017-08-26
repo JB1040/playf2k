@@ -1,0 +1,164 @@
+@*
+ * This template takes a single argument, a String containing a
+ * message to display.
+ *@
+@(article: DeckArticle,token: com.fasterxml.jackson.databind.JsonNode,author: List[User])
+
+@import helper._
+@import com.fasterxml.jackson.databind.JsonNode
+@main("Edit Deck - Fade2Karma") {
+	@header()
+	<div _ngcontent-c1="" class="F2K-column">
+    	<div _ngcontent-c1="" class="clearfix featured" style="margin-bottom: 40px">
+    	<br>
+    		<h1 style="text-align:center;">Edit or create Article</h1>
+    		<br><br>
+			<form action="/api/decks/edit" method="post">
+			@CSRF.formField
+			<div style="text-align:center">
+			<input type="hidden" name="id" value="@if(article.id == null) {-1} else {@article.id}">
+			<input type="hidden" name="game" value="HS">
+			<!--  <input type="hidden" name="author.id" value="0">-->
+						
+			<select id="beep" name="author.id">
+    			@for(a <- author){
+        			<option value="@a.id">@a.username</option>
+    			}
+			</select><br><br>
+			Title: <input name="title" value="@article.title"> <br><br>
+			<select name="heroCard.dbId" id="heroSelect" >
+			<option value="-1" selected>Select HERO</option>
+			<option value="7">Warrior</option>
+			<option value="813">Priest</option>
+			<option value="893">Warlock</option>
+			<option value="1066">Shaman</option>
+			<option value="31">Hunter</option>
+			<option value="930">Rogue</option>
+			<option value="671">Paladin</option>
+			<option value="637">Mage</option>
+			<option value="274">Druid</option>
+			</select><br><br>
+			Add card: <input id="newc" value=""> <button id="add" type="button">add</button><br><br>
+			<ul id="cardList" style="width:100%; text-align:left; max-height:280px; column-count:3; -webkit-column-count:3; -moz-column-count:3;">
+
+			</ul>
+
+			
+			<select name="game" disabled>
+			<option value="HS" selected>Hearthstone</option>
+			<option value="GWENT">Gwent</option>
+			</select>
+			
+			<select name="mode" >
+			<option value="CON" selected>Constructed</option>
+			<option value="ARENA">Arena</option>
+			<option value="BRAWL">Brawl</option>
+			</select>
+			<br><br>
+			
+			<select name="tier" >
+			<option value="0" selected>None (T0)</option>
+			<option value="1">Tier 1</option>
+			<option value="2">Tier 2</option>
+			<option value="3">Tier 3</option>
+			<option value="4">Tier 4</option>
+			<option value="5">Tier 5</option>
+			</select>
+			<br><br>
+            <textarea name="content" id="editor1" rows="10" >
+                <p class="b1">@article.content</p>
+            </textarea>
+
+            </div>
+            <button name="published" value="0" type="submit">Preview (unpublishes)</button>
+            <button name="published" value="1" type="submit">Submit</button>
+            <a href="@controllers.UserController.MAINURL"><button type="button">Cancel</button></a>
+            </form>
+        </div>
+    </div>
+	<script>
+		CKEDITOR.replace( 'editor1', {
+		 extraAllowedContent: 'b i img'
+		});
+		var list = $("#cardList");
+		var b = $("#add");
+		var inn = $("#newc");
+		var cards = []
+		var addCard = function(card) { 
+			cards.push(card.actualVal);
+			return '<li >' + 
+					card.label + '<button type="button" style="left: 10px;">delete</button></li>' ;
+			
+		};
+	
+		var source = @Html(token.toString());
+		inn.autocomplete({
+		    source: source,
+		    minLength: 2,
+			select: function(e,ui) {
+				var f = ui.item.value;
+				var j = source.length;
+				for (var i =0; i< j; i++) {
+					if (source[i].label == f) {
+						list.append(addCard(source[i]));
+						break;
+					}
+				}
+				inn.val("");
+				e.preventDefault();
+			}
+		});
+		
+		list.on("click", "li > button", function() {
+	 				var i = $(this).parent().index();
+	 				$(this).parent().remove();
+	 				cards.splice(i,1);
+		});
+		
+
+		
+		
+		$("form").submit(function(e) {
+		  for (var i= 0; i < cards.length; i++) {
+		   $(this).append('<input type="hidden" name="cards[' + i + '].dbId" value="' +cards[i] + '">' );
+		  }
+		});
+		
+		$("#heroSelect").change(function () {
+        	var filter = $("#heroSelect  option:selected").text().toUpperCase();
+        	
+        		var newSource = source.filter(function(elem) {
+        	   		return (filter == "SELECT HERO") || elem.hero == "NEUTRAL" || elem.hero == filter;
+        	   		
+        		});
+        		
+        	inn.autocomplete('option', 'source', newSource);
+        	
+    	});
+		@if(article.heroCard != null) {
+			$("#heroSelect").val("@article.heroCard.dbId");
+			$("#heroSelect").trigger('change');
+		}
+		@if(article.cards != null) {
+
+			@for(card <- article.cards) {
+				card = {};
+				card.label = "@card.name";
+				card.actualVal = @card.dbId;
+				list.append(addCard(card));
+			}
+		}
+		
+	</script>
+		<style>
+		#cardList > li {
+		 height: 25px;
+		 border-right: 3px ridge;
+		}
+		#cardList > li	 > button {
+			float:right;
+			margin-right:20px;
+			margin-top:2px;
+		}
+		</style>
+}

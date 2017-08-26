@@ -1,0 +1,66 @@
+@*
+ * This template takes a single argument, a String containing a
+ * message to display.
+ *@
+@(article: Article,author: List[User])
+
+@import helper._
+
+@*
+ * Call the `main` template with two arguments. The first
+ * argument is a `String` with the title of the page, the second
+ * argument is an `Html` object containing the body of the page.
+ *@
+@main("Edit Article - Fade2Karma") {
+	@header()
+	<div _ngcontent-c1="" class="F2K-column">
+    	<div _ngcontent-c1="" class="clearfix featured" style="margin-bottom: 40px">
+    	<br>
+    		<h1 style="text-align:center;">Edit or create Article</h1>
+    		<br><br>
+			<form  action="/api/articles/edit" method="post">
+			@CSRF.formField
+			<div style="text-align:center">
+			<input type="hidden" name="id" value="@if(article.id == null) {-1} else {@article.id}">
+			<input type="hidden" name="game" value="HS">
+			<!--  <input type="hidden" name="author.id" value="0">-->
+			Title: <input name="title" value="@article.title"> <br><br>
+			Image: <input name="imageURL" value="@article.imageURL"><br><br>
+			<select id="typee" name="type">
+    			@for(t <- Article.ArtType.values()){
+        			<option value="@t.toString()">@t.toString().toLowerCase()</option>
+    			}
+			</select><br><br>
+			<select id="beep" name="author.id">
+    			@for(a <- author){
+        			<option value="@a.id">@a.username</option>
+    			}
+			</select><br><br>
+			<select name="game" disabled>
+			<option value="HS" selected>Hearthstone</option>
+			<option value="GWENT">Gwent</option>
+			</select>
+			<br><br>
+            <textarea name="content" id="editor1" rows="10" >
+                <p class="b1">@article.content</p>
+            </textarea>
+            <script>
+                // Replace the <textarea id="editor1"> with a CKEditor
+                // instance, using default configuration.
+                CKEDITOR.replace( 'editor1', {
+		 			extraAllowedContent: 'b i img'
+				});
+                @if(article.getType() != null) {
+                	$("#typee").val("@article.getType().toString()");
+                }
+            </script>
+            </div>
+            <button name="published" value="0" type="submit">Preview (unpublishes)</button>
+            <button name="published" value="1" type="submit">Submit</button>
+            <a href="/"><button>Cancel</button></a>
+            </form>
+            
+        </div>
+    </div>
+
+}
