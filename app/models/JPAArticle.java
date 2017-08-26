@@ -81,7 +81,7 @@ public class JPAArticle implements ArticleRepository  {
 
     private Stream<Article> list(EntityManager em,int offset,int amount,ArtType type) {
    	 TypedQuery<Article> q= em.createQuery("select a from Article a WHERE published = 1 AND" + HSONLY +
-   			 					(type == null ? "" : " AND type = '" + type + "'")+ 
+   			 					(type == null ? " AND type != 'GIVEAWAYS'" : " AND type = '" + type + "'")+ 
    			 					BYDATE, Article.class);
    	List<Article> art = q.setMaxResults(amount)
    							.setFirstResult(offset)

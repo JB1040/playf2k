@@ -81,8 +81,9 @@ public class JPAUser implements UserRepository  {
 	
 
 		
-
-		return loadTwitch(u,isOnline);
+		u = loadTwitch(u,isOnline);
+		u.sort((a,b) -> a.twitchData != null? -1 : 0);
+		return u.stream();
 	}
 
 	private User getByID(EntityManager em,long id) {
@@ -92,7 +93,7 @@ public class JPAUser implements UserRepository  {
 	}
 	
 	
-	public static Stream<User> loadTwitch(List<User> u,Boolean isOnline) {
+	public static List<User> loadTwitch(List<User> u,Boolean isOnline) {
 		WSRequest req = ArticlesController.ws.url("https://api.twitch.tv/kraken/streams");
 		StringBuilder channels = new StringBuilder();
 		u.forEach(user -> {
@@ -101,7 +102,7 @@ public class JPAUser implements UserRepository  {
 		}) ;
 
 		if (channels.length() <1)
-			return u.stream();
+			return u;
 		channels.setLength(channels.length()-1);
 
 		req.addQueryParameter("channel", channels.toString().toLowerCase())
@@ -125,7 +126,7 @@ public class JPAUser implements UserRepository  {
 						u.removeIf(user -> (user.twitchData == null) == isOnline.booleanValue());
 				}
 				return u;
-			}).toCompletableFuture().get().stream();
+			}).toCompletableFuture().get();
 		} catch (InterruptedException | ExecutionException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
