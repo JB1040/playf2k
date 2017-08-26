@@ -82,7 +82,7 @@ public class JPAUser implements UserRepository  {
 
 		
 		u = loadTwitch(u,isOnline);
-		u.sort((a,b) -> a.twitchData != null? -1 : 0);
+		u.sort((a,b) -> a.twitchData != null? -1 : b.twitchData != null ? 1 : 0);
 		return u.stream();
 	}
 
