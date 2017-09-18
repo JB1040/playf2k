@@ -103,12 +103,13 @@ public class JPADeckArticle implements DeckArticleRepository  {
 		  List<DeckArticle> art = em.createQuery("select a from DeckArticle a where published = 1 AND creator = :id AND" + HSONLY + BYDATE, DeckArticle.class)
 				  .setParameter("id", id)
 				  .getResultList();
-		  
-	        return art.stream();
+	      return art.stream();
 	}
     
     private DeckArticle getByID(EntityManager em,long id) {
-       return em.find(DeckArticle.class, id);
+    	DeckArticle result = em.find(DeckArticle.class, id);
+    	result.author.loadTwitch();
+       return result;
     }
     
     private DeckArticle upvote(EntityManager em,long id) {

@@ -30,7 +30,7 @@ CKEDITOR.dialog.add( 'videoDialog', function( editor ) {
                         type: 'text',
                         id: 'url',
                         label: 'Video URL',
-                        validate: CKEDITOR.dialog.validate.regex( /^(http:\/\/)?(www\.)?((youtube\.com\/watch\?.*?v=.*?)|(youtu\.be\/.*?))$/i, "Please enter a Youtube." )
+                        validate: CKEDITOR.dialog.validate.regex( /^(https?:\/\/)?(www\.)?((youtube\.com\/watch\?.*?v=.*?)|(youtu\.be\/.*?))$/i, "Please enter a Youtube." )
 
                     }
                 ]
@@ -41,7 +41,7 @@ CKEDITOR.dialog.add( 'videoDialog', function( editor ) {
         onOk: function() {
         var url = editor.document.createElement( 'iframe' );
 		var text = this.getValueOf( 'tab-basic', 'url' );
-		var normalURL = /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch.*?\?v=)([^&]*?)$/i;
+		var normalURL = /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?.*?v=)([^&]*?)$/i;
 		var shortURL = /^(?:https?:\/\/)?(?:www\.)?(?:youtu\.be\/)([^&?//]*?)$/i;
 		var embedURL = /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/embed\/)([^&?//]*?)$/i;
 		var match = text.match(normalURL);

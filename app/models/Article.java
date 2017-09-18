@@ -46,6 +46,9 @@ public class Article {
     @Column(insertable=false,updatable=false)
     public Date date;
     
+    @Column(insertable=false,updatable=false)
+    public Date editDate;
+    
 	public ArtType getType() {
 		return type;
 	}

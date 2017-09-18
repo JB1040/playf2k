@@ -99,7 +99,9 @@ public class JPAArticle implements ArticleRepository  {
 	}
     
     private Article getByID(EntityManager em,long id) {
-       return em.find(Article.class, id);
+    	Article result = em.find(Article.class, id);
+    	result.author.loadTwitch();
+       return result;
     }
     
     private Article upvote(EntityManager em,long id) {
