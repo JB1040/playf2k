@@ -51,7 +51,7 @@ public class JPACard implements CardRepository  {
 	
 
     private Stream<Object[]> list(EntityManager em) {
-   	 TypedQuery<Object[]> q= em.createQuery("select a.name, a.dbId, a.cardId, a.heroClass from Card a WHERE type != 'HERO'" , Object[].class);
+   	 TypedQuery<Object[]> q= em.createQuery("select a.name, a.dbId, a.cardId, a.heroClass from Card a WHERE type != 'HERO' OR cost != NULL" , Object[].class);
    	 	List<Object[]> art = q.getResultList();
        return art.stream();
    }

@@ -33,6 +33,16 @@ public class JPAFeatured implements FeaturedRepository  {
         return supplyAsync(() -> wrap(em -> list(em)), executionContext);
     }
     
+	@Override
+	public CompletionStage<ArticleFeatured> get(long id) {
+		  return supplyAsync(() -> wrap(em -> getByID(em,id)), executionContext);
+	}
+
+
+	@Override
+	public CompletionStage<ArticleFeatured> editID(long newId) {
+		return supplyAsync(() -> wrap(em -> editID(em,newId)),executionContext);
+	}
 
 
     private <T> T wrap(Function<EntityManager, T> function) {
@@ -49,6 +59,17 @@ public class JPAFeatured implements FeaturedRepository  {
        return art.stream();
    }
 
+    
+    private ArticleFeatured getByID(EntityManager em,long id) {
+		ArticleFeatured result = em.find(ArticleFeatured.class, id);
+       return result;
+    }
+    
+    private ArticleFeatured editID(EntityManager em, long newId) {
+		ArticleFeatured art = getByID(em, 1);
+		art.article = em.find(Article.class,newId);
+		return em.merge(art);
+	}
 
 
 

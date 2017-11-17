@@ -15,6 +15,7 @@ import javax.persistence.*;
 import javax.validation.constraints.Size;
 
 import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.NotFound;
 import org.hibernate.annotations.Where;
@@ -39,6 +40,7 @@ import static play.libs.Json.toJson;
 @Entity
 @Table(name="deck_article")
 @Validate
+@DynamicUpdate
 public class DeckArticle implements play.data.validation.Constraints.Validatable<List<ValidationError>> {
 
 	public enum Mode {CON,ARENA,BRAWL};
@@ -63,7 +65,7 @@ public class DeckArticle implements play.data.validation.Constraints.Validatable
 			joinColumns=@JoinColumn(name="deck_id", referencedColumnName="id"),
 			inverseJoinColumns=@JoinColumn(name="card_id", referencedColumnName="db_id"))
 	public List<Card> cards;
-
+	
 	@Required
 	public String content;
 
@@ -76,8 +78,11 @@ public class DeckArticle implements play.data.validation.Constraints.Validatable
 	public int tier;
 
 
-	@Column(insertable=false,updatable=false)
+	@Column(insertable=false,updatable=false,nullable=true)
 	public Date date;
+	
+    @Column(name="editDate",insertable=false,updatable=true,nullable=false)
+    public Date editDate;
 
 	@Enumerated(EnumType.STRING)
 	@Transient

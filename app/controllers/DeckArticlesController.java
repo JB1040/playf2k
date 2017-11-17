@@ -7,6 +7,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import akka.actor.Scheduler;
 import akka.stream.javadsl.Source;
@@ -20,6 +21,7 @@ import models.CardRepository;
 import models.DeckArticle;
 import models.DeckArticle.Mode;
 import models.DeckArticleRepository;
+import models.GwentCardRepository;
 import models.JPAArticle;
 import models.User;
 import models.UserRepository;
@@ -66,6 +68,7 @@ public class DeckArticlesController extends Controller {
 	private final ExecutionContextExecutor exec;
 	private final DeckArticleRepository deckArticleRepository;
 	private final CardRepository cardRepository;
+	private final GwentCardRepository gwentCardRepository;
 	private final HttpExecutionContext ec;
 	private final UserController userc;
 	private final UserRepository userRep;
@@ -82,7 +85,8 @@ public class DeckArticlesController extends Controller {
 	@Inject
 	public DeckArticlesController(ActorSystem actorSystem, ExecutionContextExecutor exec,
 			DeckArticleRepository deckArticleRepository,CardRepository cardRepository, 
-			HttpExecutionContext ec,WSClient ws,UserController userc,UserRepository userRep) {
+			HttpExecutionContext ec,WSClient ws,UserController userc,UserRepository userRep,
+			GwentCardRepository gwentCardRepository) {
 		this.actorSystem = actorSystem;
 		this.exec = exec;
 		this.deckArticleRepository = deckArticleRepository;
@@ -90,6 +94,7 @@ public class DeckArticlesController extends Controller {
 		this.ec = ec;
 		this.userc = userc;
 		this.userRep=userRep;
+		this.gwentCardRepository = gwentCardRepository;
 		DeckArticlesController.ws = ws;
 	}
 
@@ -155,14 +160,22 @@ public class DeckArticlesController extends Controller {
 		return arts.stream();
 	}
 	
-	public CompletionStage<Result> getArticles(int offset,int amount,int tier,String mode,String isStandard) {
+	public CompletionStage<Result> getArticles(int offset,int amount,int tier,String mode,String isStandard,String game) {
 
 		try {
 			Mode mode2 = mode == null? null : Mode.valueOf(mode);
 			Boolean isStandard2 = isStandard == null? null : Boolean.valueOf(isStandard);
-			return deckArticleRepository.list(offset,amount,tier,mode2,isStandard2).thenApplyAsync(artStream -> {
+			Article.Game game2 = game == null || game.equals("")? null : Game.valueOf(game);
+			return deckArticleRepository.list(offset,amount,tier,mode2,isStandard2,game2).thenApplyAsync(artStream -> {
 				//artStream = artStream.map((art) -> {	art.author.hashpw = null; return art;});
-				return ok(toJson(loadTwitch(artStream.collect(Collectors.toList()))));
+				JsonNode data = toJson(loadTwitch(artStream.collect(Collectors.toList())));
+				for (JsonNode deck : data) {
+					if (deck.get(game).asText().equals(Game.GWENT.toString())) {
+						 ((ObjectNode) deck).replace("cards", deck.get("cards2"));
+					}
+					 ((ObjectNode) deck).remove("cards2");
+				}
+				return ok();
 			}, ec.current());
 		} catch (IllegalArgumentException e) {
 			return supplyAsync(() -> ok(toJson(new ImmutablePair<>("error", "Could not parse parameters."))));
@@ -179,19 +192,23 @@ public class DeckArticlesController extends Controller {
 	@RequireCSRFCheck
 	public  CompletionStage<Result> doEditInsertArticle() {
 		Form<DeckArticle> form = factory.form(DeckArticle.class).bindFromRequest();
+		boolean updateTime = form.field("updateTime").getValue().isPresent();
 		Request r = play.mvc.Http.Context.current().request();
 		return userc.isLogged().thenApplyAsync(bool -> {
 			if (bool) {
 				if (!form.hasErrors()) {
 					DeckArticle art =  form.get();
+					if (updateTime) {
+						art.editDate = new Date();
+					}
 					if (art.id == -1) {
 						return deckArticleRepository.add(art).thenApplyAsync(art2 -> {
 
-							return Results.found("http://d2416peknw0o5h.cloudfront.net/#/decks/_" + art2.id);
+							return Results.found("http://d2416peknw0o5h.cloudfront.net/tier_list/_" + art2.id);
 						}, ec.current()).toCompletableFuture().join();
 					} else {
 						return deckArticleRepository.edit(art).thenApplyAsync(art2 -> {
-							return Results.found("http://d2416peknw0o5h.cloudfront.net/#/decks/_" + art2.id);
+							return Results.found("http://d2416peknw0o5h.cloudfront.net/tier_list/_" + art2.id);
 						}, ec.current()).toCompletableFuture().join();
 					}
 				} else {
@@ -248,6 +265,10 @@ public class DeckArticlesController extends Controller {
 			},ec.current());
 		}
 
-
+		public CompletionStage<Result> allGwentCards() {
+			return gwentCardRepository.list().thenApplyAsync(art -> {
+				return ok(toJson(art));
+			},ec.current());
+		}
 
 	}

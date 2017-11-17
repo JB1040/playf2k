@@ -58,7 +58,6 @@ CKEDITOR.dialog.add( 'videoDialog', function( editor ) {
         }
     };
 });
-
 CKEDITOR.editorConfig = function( config ) {
 	// Define changes to default configuration here.
 	// For complete reference see:
@@ -77,7 +76,8 @@ CKEDITOR.editorConfig = function( config ) {
 		'/',
 		{ name: 'basicstyles', groups: [ 'basicstyles', 'cleanup' ] },
 		{ name: 'paragraph',   groups: [ 'list', 'indent', 'blocks', 'align', 'bidi' ] },
-		{ name: 'styles' }
+		{ name: 'styles' },
+		{ name: 'font' , groups:['size']}
 	];
 	// Remove some buttons provided by the standard plugins, which are
 	// not needed in the Standard(s) toolbar.
@@ -95,6 +95,9 @@ CKEDITOR.editorConfig = function( config ) {
 	//config.stylesSet = 'my_styles';
 
 	config.extraPlugins = 'video';
+	
+	config.extraPlugins = 'justify';
+	config.extraPlugins = 'font';
 	// Simplify the dialog windows.
 	config.removeDialogTabs = 'image:advanced;link:advanced';
 };

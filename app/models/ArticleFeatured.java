@@ -21,7 +21,7 @@ public class ArticleFeatured {
 	@Column(name = "id")
 	@Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    public int id;
+    public Long id;
 	
 	@OneToOne(fetch=FetchType.EAGER,cascade=CascadeType.PERSIST,optional=true)
     @JoinColumn(name="article_id")

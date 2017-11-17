@@ -14,4 +14,6 @@ public interface FeaturedRepository {
     
     CompletionStage<Stream<ArticleFeatured>> list();
 
+    CompletionStage<ArticleFeatured> editID(long id);
+    CompletionStage<ArticleFeatured> get(long id);
 }

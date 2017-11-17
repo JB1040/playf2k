@@ -11,7 +11,7 @@ GET     /api/articles/byAuthor/:id     controllers.ArticlesController.byAuthor(i
 GET     /api/articles/featured             controllers.ArticlesController.getFeatured()
 
 # Get article list, optional offset,amount
-GET     /api/articles/list             controllers.ArticlesController.getArticles(offset: Int ?= 0,amount: Int ?= 20, type: String ?= null)
+GET     /api/articles/list             controllers.ArticlesController.getArticles(offset: Int ?= 0,amount: Int ?= 20, type: String ?= null,game: String ?= null)
 
 
 GET    /api/articles/edit              controllers.ArticlesController.editInsertArticle(id: Long ?= -1)
@@ -45,7 +45,7 @@ GET     /api/users/:id              controllers.UserController.getUser(id: Long)
 GET     /api/decks/byAuthor/:id     controllers.DeckArticlesController.byAuthor(id: Long)
 
 # Get article list, optional offset,amount
-GET     /api/decks/list             controllers.DeckArticlesController.getArticles(offset: Int ?= 0,amount: Int ?= 20, tier: Int ?= 0,mode: String ?= null, isStandard: String ?= null)
+GET     /api/decks/list             controllers.DeckArticlesController.getArticles(offset: Int ?= 0,amount: Int ?= 20, tier: Int ?= 0,mode: String ?= null, isStandard: String ?= null, game: String ?= null)
 
 
 GET    /api/decks/edit              controllers.DeckArticlesController.editInsertArticle(id: Long ?= -1)
@@ -62,6 +62,10 @@ GET     /api/decks/:id              controllers.DeckArticlesController.getArticl
 
 # Get direct article
 GET     /api/cards/all             controllers.DeckArticlesController.allCards()
+
+
+# Get direct article
+GET     /api/gwcards/all             controllers.DeckArticlesController.allGwentCards()
 
 
 # Map static resources from the /public folder to the /assets URL path

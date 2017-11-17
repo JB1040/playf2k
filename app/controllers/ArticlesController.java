@@ -110,10 +110,11 @@ public class ArticlesController extends Controller {
 		}, ec.current());
 	}
 
-	public CompletionStage<Result> getArticles(int offset,int amount,String type) {
+	public CompletionStage<Result> getArticles(int offset,int amount,String type,String game) {
 		try {
 			Article.ArtType type2 = type == null || type.equals("")? null : ArtType.valueOf(type);
-			return articleRepository.list(offset,amount,type2).thenApplyAsync(artStream -> {
+			Article.Game game2 = game == null || game.equals("")? null : Game.valueOf(game);
+			return articleRepository.list(offset,amount,type2,game2).thenApplyAsync(artStream -> {
 
 				return ok(toJson(loadTwitch(artStream.collect(Collectors.toList()))));
 			}, ec.current());
@@ -177,7 +178,6 @@ public class ArticlesController extends Controller {
 				return arts;
 			}).toCompletableFuture().get().stream();
 		} catch (InterruptedException | ExecutionException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return arts.stream();
@@ -188,22 +188,39 @@ public class ArticlesController extends Controller {
 	@RequireCSRFCheck
 	public  CompletionStage<Result> doEditInsertArticle() {
 		Form<Article> form = factory.form(Article.class).bindFromRequest();
+		boolean doFeature =  form.field("featured").getValue().isPresent();
 		Request r = play.mvc.Http.Context.current().request();
 		return userc.isLogged().thenApplyAsync(bool -> {
 			if (bool) {
 				if (!form.hasErrors()) {
 					Article art =  form.get();
+
 					filterYoutubeTwitch(art);
 					if (art.id == -1) {
 						return articleRepository.add(art).thenApplyAsync(art2 -> {
-
-							return Results.found("http://d2416peknw0o5h.cloudfront.net/#/articles/" + art2.id);
+							if (doFeature) {
+								try {
+								featuredRepository.editID(art2.id).toCompletableFuture().get();
+								} catch (Exception e5) {
+									e5.printStackTrace();
+								}
+							}
+							return Results.found("http://f2k.gg/articles/_" + art2.id);
 						}, ec.current()).toCompletableFuture().join();
 					} else {
 						return articleRepository.edit(art).thenApplyAsync(art2 -> {
-							return Results.found("http://d2416peknw0o5h.cloudfront.net/#/articles/" + art2.id);
+							if (doFeature) {
+								try {
+								featuredRepository.editID(art2.id).toCompletableFuture().get();
+								} catch (Exception e5) {
+									e5.printStackTrace();
+								}
+							}
+							return Results.found("http://d2416peknw0o5h.cloudfront.net/articles/_" + art2.id);
 						}, ec.current()).toCompletableFuture().join();
 					}
+					
+
 				} else {
 					return  ok(toJson(new ImmutablePair<>("errors", form.errorsAsJson())));
 				}

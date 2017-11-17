@@ -3,6 +3,7 @@ package models;
 import com.google.inject.ImplementedBy;
 
 import models.Article.ArtType;
+import models.Article.Game;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -21,7 +22,7 @@ public interface ArticleRepository {
     CompletionStage<Article> edit(Article art);
     CompletionStage<Article> upvote(long id);
     
-    CompletionStage<Stream<Article>> list(int offset,int amount,ArtType type);
+    CompletionStage<Stream<Article>> list(int offset,int amount,ArtType type,Game game);
 
     CompletionStage<Stream<Article>> byAuthor(long id);
 

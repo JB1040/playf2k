@@ -2,6 +2,8 @@ package models;
 
 import com.google.inject.ImplementedBy;
 
+import models.Article.Game;
+
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Stream;
 
@@ -18,7 +20,7 @@ public interface DeckArticleRepository {
     CompletionStage<DeckArticle> edit(DeckArticle art);
     CompletionStage<DeckArticle> upvote(long id);
     
-    CompletionStage<Stream<DeckArticle>> list(int offset,int amount,int tier,DeckArticle.Mode mode,Boolean isStandard);
+    CompletionStage<Stream<DeckArticle>> list(int offset,int amount,int tier,DeckArticle.Mode mode,Boolean isStandard,Game game);
 
     CompletionStage<Stream<DeckArticle>> byAuthor(long id);
 }

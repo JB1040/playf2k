@@ -22,7 +22,7 @@
 			@CSRF.formField
 			<div style="text-align:center">
 			<input type="hidden" name="id" value="@if(article.id == null) {-1} else {@article.id}">
-			<input type="hidden" name="game" value="HS">
+			<input type="hidden" name="id" value="@if(article.rating == null) {0} else {@article.rating}">
 			<!--  <input type="hidden" name="author.id" value="0">-->
 			Title: <input name="title" value="@article.title"> <br><br>
 			Image: <input name="imageURL" value="@article.imageURL"><br><br>
@@ -36,7 +36,7 @@
         			<option value="@a.id">@a.username</option>
     			}
 			</select><br><br>
-			<select name="game" disabled>
+			<select name="game" >
 			<option value="HS" selected>Hearthstone</option>
 			<option value="GWENT">Gwent</option>
 			</select>
@@ -55,6 +55,9 @@
                 }
             </script>
             </div>
+           
+			<input type="checkbox" name="featured" value="1">Make featured (unfeatures other articles)<br>
+
             <button name="published" value="0" type="submit">Preview (unpublishes)</button>
             <button name="published" value="1" type="submit">Submit</button>
             <a href="/"><button>Cancel</button></a>
@@ -62,5 +65,4 @@
             
         </div>
     </div>
-
 }

@@ -9,6 +9,7 @@ import javax.persistence.LockModeType;
 import javax.persistence.TypedQuery;
 
 import models.Article.ArtType;
+import models.Article.Game;
 
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -42,8 +43,9 @@ public class JPAArticle implements ArticleRepository  {
 		  return supplyAsync(() -> wrap(em -> getByID(em,id)), executionContext);
 	}
 
-    public CompletionStage<Stream<Article>> list(int offset,int amount,ArtType type) {
-        return supplyAsync(() -> wrap(em -> list(em,offset,amount,type)), executionContext);
+
+    public CompletionStage<Stream<Article>> list(int offset,int amount,ArtType type,Game game) {
+        return supplyAsync(() -> wrap(em -> list(em,offset,amount,type,game)), executionContext);
     }
     
 
@@ -79,9 +81,10 @@ public class JPAArticle implements ArticleRepository  {
         return art;
     }
 
-    private Stream<Article> list(EntityManager em,int offset,int amount,ArtType type) {
-   	 TypedQuery<Article> q= em.createQuery("select a from Article a WHERE published = 1 AND" + HSONLY +
+    private Stream<Article> list(EntityManager em,int offset,int amount,ArtType type,Game game) {
+   	 TypedQuery<Article> q= em.createQuery("select a from Article a WHERE published = 1" +
    			 					(type == null ? " AND type != 'GIVEAWAYS'" : " AND type = '" + type + "'")+ 
+   			 					(game == null ? "" : " AND game = '" + game + "'")+ 
    			 					BYDATE, Article.class);
    	List<Article> art = q.setMaxResults(amount)
    							.setFirstResult(offset)
@@ -99,10 +102,17 @@ public class JPAArticle implements ArticleRepository  {
 	}
     
     private Article getByID(EntityManager em,long id) {
+		if (id == -1) {
+			return null;
+		}
     	Article result = em.find(Article.class, id);
-    	result.author.loadTwitch();
+    	if (result != null) {
+    		result.author.loadTwitch();
+    	}
        return result;
     }
+    
+
     
     private Article upvote(EntityManager em,long id) {
        Article a = em.find(Article.class, id);
