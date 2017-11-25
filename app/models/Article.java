@@ -18,6 +18,9 @@ public class Article {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
 	public Long id;
 	
+	@Column(name="author_id",insertable=false,updatable=false)
+	public long authorID;
+	
     @ManyToOne(fetch=FetchType.EAGER,cascade=CascadeType.PERSIST)
     @Required
     @JoinColumn(name="author_id")

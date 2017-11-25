@@ -111,7 +111,7 @@ public class JPADeckArticle implements DeckArticleRepository  {
 
 
 	private Stream<DeckArticle> listByCreator(EntityManager em, long id) {
-		List<DeckArticle> art = em.createQuery("select a from DeckArticle a where published = 1 AND creator = :id AND" + HSONLY + BYDATE, DeckArticle.class)
+		List<DeckArticle> art = em.createQuery("select a from DeckArticle a where published = 1 AND authorID = :id AND" + HSONLY + BYDATE, DeckArticle.class)
 				.setParameter("id", id)
 				.getResultList();
 		return art.stream();

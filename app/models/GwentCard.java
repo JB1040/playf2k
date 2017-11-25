@@ -26,6 +26,11 @@ public class GwentCard implements Serializable {
 	 */
 	private static final long serialVersionUID = 1802365342132393177L;
 
+	public enum Group { BRONZE,SILVER,GOLD,LEADER}
+	
+
+	public enum Rarity { COMMON,RARE,EPIC,LEGENDARY}
+
 	public enum Faction { 
 		NEUTRAL,MONSTERS,NILFGAARD,NORTHERN_REALMS,SCOIATAEL,SKELLIGE;
 		
@@ -70,6 +75,15 @@ public class GwentCard implements Serializable {
 	@Required
     public String name;
 
+	@Required
+    public String text;
+
+    public String flavor;
+	
+
+	
+    public int strength;
+
 //	@Required
 //	@Enumerated(EnumType.STRING)
 //    public Rarity rarity;
@@ -91,6 +105,13 @@ public class GwentCard implements Serializable {
 
 	@Transient
 	public List<String> positions;
+
+	public Faction faction;
+
+	public Rarity rarity;
+	
+	@Column(name="group2")
+	public Group group;
 	
 	@PostLoad
 	protected void setArrays() {

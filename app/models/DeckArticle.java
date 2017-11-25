@@ -48,6 +48,10 @@ public class DeckArticle implements play.data.validation.Constraints.Validatable
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name="id")
 	public Long id;
+	
+
+	@Column(name="author_id",insertable=false,updatable=false)
+	public long authorID;
 
 	@ManyToOne(fetch=FetchType.EAGER,cascade=CascadeType.PERSIST)
 	@Required
