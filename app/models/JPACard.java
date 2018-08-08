@@ -8,6 +8,8 @@ import javax.persistence.EntityManager;
 import javax.persistence.LockModeType;
 import javax.persistence.TypedQuery;
 
+import models.hibernateModels.BaseHearthstoneCard;
+
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
@@ -33,6 +35,10 @@ public class JPACard implements CardRepository  {
         return supplyAsync(() -> wrap(em -> list(em)), executionContext);
     }
     
+    public CompletionStage<Stream<Card>> all() {
+        return supplyAsync(() -> wrap(em -> all(em)), executionContext);
+    }
+    
 
 
     private <T> T wrap(Function<EntityManager, T> function) {
@@ -55,6 +61,12 @@ public class JPACard implements CardRepository  {
    	 	List<Object[]> art = q.getResultList();
        return art.stream();
    }
+    
+    private Stream<Card> all(EntityManager em) {
+      	 TypedQuery<Card> q= em.createQuery("select a from Card a " , Card.class);
+      	 	List<Card> art = q.getResultList();
+          return art.stream();
+      }
 
 
 

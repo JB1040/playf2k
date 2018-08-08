@@ -12,6 +12,7 @@ import java.util.stream.Stream;
 public interface GwentCardRepository {
 
     
-    CompletionStage<Stream<GwentCard>> list();
+    CompletionStage<Stream<Object[]>> list();
+    CompletionStage<Stream<GwentCard>> all();
 
 }

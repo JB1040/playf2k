@@ -17,42 +17,53 @@
 			@CSRF.formField
 			<div style="text-align:center">
 			<input type="hidden" name="id" value="@if(article.id == null) {-1} else {@article.id}">
-			<input type="hidden" name="id" value="@if(article.rating == null) {0} else {@article.rating}">
-			<input type="hidden" name="game" value="HS">
+			<input type="hidden" name="rating" value="@if(article.rating == null) {0} else {@article.rating}">
 			<select id="beep" name="author.id">
+			@if(article.author !=null) {
     			@for(a <- author){
-        			<option value="@a.id">@a.username</option>
+        			<option value="@a.id" @if(article.authorID == a.id) {selected}>@a.username</option>
     			}
+    		} else {
+    			   @for(a <- author){
+        			<option value="@a.id" @if("Fade2Karma".equals(a.username)) {selected}>@a.username</option>
+    			}
+    		}
 			</select><br><br>
 			Title: <input name="title" value="@article.title"> <br><br>
-			<select name="heroCard.dbId" id="heroSelect" >
-			<option value="-1" selected>Select HERO</option>
-			<option value="7">Warrior</option>
-			<option value="813">Priest</option>
-			<option value="893">Warlock</option>
-			<option value="1066">Shaman</option>
-			<option value="31">Hunter</option>
-			<option value="930">Rogue</option>
-			<option value="671">Paladin</option>
-			<option value="637">Mage</option>
-			<option value="274">Druid</option>
-			</select><br><br>
-			Add card: <input id="newc" value=""> <button id="add" type="button">add</button><br><br>
-			<ul id="cardList" style="width:100%; text-align:left; max-height:280px; column-count:3; -webkit-column-count:3; -moz-column-count:3;">
-
-			</ul>
-
-			
-			<select name="game">
-			<option value="HS" selected>Hearthstone</option>
-			<option value="GWENT">Gwent</option>
+	
+			<select id="game" name="game">
+				<option value="HS" @if(article.game == enums.General.Game.HS) {selected} >Hearthstone</option>
+				<option value="GWENT" @if(article.game == enums.General.Game.GWENT) {selected}>Gwent</option>
 			</select>
+			<br><br>
+			<div id="hscontent"/>
+				<select name="heroCard.dbId" id="heroSelect" >
+				<option value="-1" selected>Select HS HERO</option>
+				<option value="7">Warrior</option>
+				<option value="813">Priest</option>
+				<option value="893">Warlock</option>
+				<option value="1066">Shaman</option>
+				<option value="31">Hunter</option>
+				<option value="930">Rogue</option>
+				<option value="671">Paladin</option>
+				<option value="637">Mage</option>
+				<option value="274">Druid</option>
 			
-			<select name="mode" >
-			<option value="CON" selected>Constructed</option>
-			<option value="ARENA">Arena</option>
-			<option value="BRAWL">Brawl</option>
-			</select>
+			
+				</select><br><br>
+				Add card: <input id="newcHS" value=""> <button id="addHS" type="button">add</button><br><br>
+				<ul id="cardListHS" style="width:100%; text-align:left; max-height:280px; column-count:3; -webkit-column-count:3; -moz-column-count:3;">
+	
+				</ul>
+			
+				<select name="mode" >
+				<option value="CON" selected>Constructed</option>
+				<option value="ARENA">Arena</option>
+				<option value="BRAWL">Brawl</option>
+				</select>
+			</div>
+			
+			
 			<br><br>
 			
 			<select name="tier" >
@@ -80,82 +91,93 @@
 		CKEDITOR.replace( 'editor1', {
 		 extraAllowedContent: 'b i img'
 		});
-		var list = $("#cardList");
-		var b = $("#add");
-		var inn = $("#newc");
-		var cards = []
-		var addCard = function(card) { 
-			cards.push(card.actualVal);
+		var hslist = $("#cardListHS");
+		var contentHS= $("#hscontent");
+		var innerHS = contentHS.html();
+		var buttonHS = $("#addHS");
+		var innHS = $("#newcHS");
+		var cardsHS = [];
+		
+		
+		var addCardHS = function(card) { 
+			cardsHS.push(card.actualVal);
 			return '<li >' + 
 					card.label + '<button type="button" style="left: 10px;">delete</button></li>' ;
 			
 		};
+		
+		
 	
-		var source = @Html(token.toString());
-		inn.autocomplete({
-		    source: source,
+		var sourceHS = @Html(token.toString());
+		innHS.autocomplete({
+		    source: sourceHS,
 		    minLength: 2,
 			select: function(e,ui) {
 				var f = ui.item.value;
-				var j = source.length;
+				var j = sourceHS.length;
 				for (var i =0; i< j; i++) {
-					if (source[i].label == f) {
-						list.append(addCard(source[i]));
+					if (sourceHS[i].label == f) {
+						hslist.append(addCardHS(sourceHS[i]));
 						break;
 					}
 				}
-				inn.val("");
+				innHS.val("");
 				e.preventDefault();
 			}
 		});
 		
-		list.on("click", "li > button", function() {
+		hslist.on("click", "li > button", function() {
 	 				var i = $(this).parent().index();
 	 				$(this).parent().remove();
-	 				cards.splice(i,1);
+	 				cardsHS.splice(i,1);
+		});
+		
+	
+		
+		$("form").submit(function(e) {
+		  for (var i= 0; i < cardsHS.length; i++) {
+		   $(this).append('<input type="hidden" name="cards[' + i + '].dbId" value="' +cardsHS[i] + '">' );
+		  }
 		});
 		
 
-		
-		
-		$("form").submit(function(e) {
-		  for (var i= 0; i < cards.length; i++) {
-		   $(this).append('<input type="hidden" name="cards[' + i + '].dbId" value="' +cards[i] + '">' );
-		  }
-		});
 		
 		$("#heroSelect").change(function () {
         	var filter = $("#heroSelect  option:selected").text().toUpperCase();
         	
-        		var newSource = source.filter(function(elem) {
+        		var newSource = sourceHS.filter(function(elem) {
         	   		return (filter == "SELECT HERO") || elem.hero == "NEUTRAL" || elem.hero == filter;
         	   		
         		});
         		
-        	inn.autocomplete('option', 'source', newSource);
+        	innHS.autocomplete('option', 'source', newSource);
         	
     	});
-		@if(article.heroCard != null) {
-			$("#heroSelect").val("@article.heroCard.dbId");
-			$("#heroSelect").trigger('change');
-		}
-		@if(article.cards != null) {
+    	
+    	
+    	@if(article != null) {
+			@if(article.heroCard != null) {
+				$("#heroSelect").val("@article.heroCard.dbId");
+				$("#heroSelect").trigger('change');
+			}
+			@if(article.cards != null) {
 
-			@for(card <- article.cards) {
-				card = {};
-				card.label = "@card.name";
-				card.actualVal = @card.dbId;
-				list.append(addCard(card));
+				@for(card <- article.cards) {
+					card = {};
+					card.label = "@card.name";
+					card.actualVal = @card.dbId;
+					hslist.append(addCardHS(card));
+				}
 			}
 		}
 		
 	</script>
 		<style>
-		#cardList > li {
+		#cardListHS > li {
 		 height: 25px;
 		 border-right: 3px ridge;
 		}
-		#cardList > li	 > button {
+		#cardListHS > li	 > button {
 			float:right;
 			margin-right:20px;
 			margin-top:2px;

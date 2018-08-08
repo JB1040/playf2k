@@ -12,7 +12,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.inject.Inject;
 
 import controllers.ArticlesController;
-import models.Article.Game;
+import enums.General.Game;
 import play.data.validation.Constraints.Required;
 import play.libs.ws.WSResponse;
 

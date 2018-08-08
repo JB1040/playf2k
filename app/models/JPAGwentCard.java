@@ -29,8 +29,13 @@ public class JPAGwentCard implements GwentCardRepository  {
     }
 
     
-    public CompletionStage<Stream<GwentCard>> list() {
+    public CompletionStage<Stream<Object[]>> list() {
         return supplyAsync(() -> wrap(em -> list(em)), executionContext);
+    }
+    
+    
+    public CompletionStage<Stream<GwentCard>> all() {
+        return supplyAsync(() -> wrap(em -> all(em)), executionContext);
     }
     
 
@@ -48,12 +53,16 @@ public class JPAGwentCard implements GwentCardRepository  {
 		return art;
 	}
 
-	
-
-    private Stream<GwentCard> list(EntityManager em) {
-   	 TypedQuery<GwentCard> q= em.createQuery("select a from GwentCard a" , GwentCard.class);
+    private Stream< GwentCard> all(EntityManager em) {
+     	 TypedQuery<GwentCard> q= em.createQuery("select a from GwentCard a" , GwentCard.class);
    	 	List<GwentCard> art = q.getResultList();
        return art.stream();
+  }
+
+    private Stream<Object[]> list(EntityManager em) {
+      	 TypedQuery<Object[]> q= em.createQuery("select a.name, a.dbId, a.cardId, a.faction from GwentCard a" , Object[].class);
+    	 	List<Object[]> art = q.getResultList();
+        return art.stream();
    }
 
 

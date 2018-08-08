@@ -21,7 +21,7 @@ import static java.util.concurrent.CompletableFuture.supplyAsync;
 /**
  * Provide JPA operations running inside of a thread pool sized to the connection pool
  */
-public class JPADeckArticle implements GwentDeckArticleRepository  {
+public class JPAGwentDeckArticle implements GwentDeckArticleRepository  {
 
 	private final JPAApi jpaApi;
 	private final DatabaseExecutionContext executionContext;
@@ -29,7 +29,7 @@ public class JPADeckArticle implements GwentDeckArticleRepository  {
 	private static final String GWONLY = " game = 'GWENT'";
 
 	@Inject
-	public JPADeckArticle(JPAApi jpaApi, DatabaseExecutionContext executionContext) {
+	public JPAGwentDeckArticle(JPAApi jpaApi, DatabaseExecutionContext executionContext) {
 		this.jpaApi = jpaApi;
 		this.executionContext = executionContext;
 
@@ -44,8 +44,8 @@ public class JPADeckArticle implements GwentDeckArticleRepository  {
 		return supplyAsync(() -> wrap(em -> getByID(em,id)), executionContext);
 	}
 
-	public CompletionStage<Stream<DeckGwentArticle>> list(int offset,int amount,int tier,GwentCard.Faction faction, GwentCard.Leader leader, Boolean isStandard,Game game) {
-		return supplyAsync(() -> wrap(em -> list(em,offset,amount,tier,faction,leader,isStandard,game)), executionContext);
+	public CompletionStage<Stream<DeckGwentArticle>> list(int offset,int amount,int tier,GwentCard.Faction faction, GwentCard.Leader leader,Game game) {
+		return supplyAsync(() -> wrap(em -> list(em,offset,amount,tier,faction,leader,game)), executionContext);
 	}
 
 
@@ -56,7 +56,6 @@ public class JPADeckArticle implements GwentDeckArticleRepository  {
 
 
 
-	@Override
 	public CompletionStage<DeckGwentArticle> edit(DeckGwentArticle art) {
 		return supplyAsync(() -> wrap(em -> edit(em,art)),executionContext);
 	}
@@ -67,10 +66,10 @@ public class JPADeckArticle implements GwentDeckArticleRepository  {
 
 
 
-	public DeckArticle edit(EntityManager em, DeckGwentArticle art) {
+	public DeckGwentArticle edit(EntityManager em, DeckGwentArticle art) {
 		art.author = em.find(User.class, art.author.id);
 		if (art.editDate == null) {
-			DeckGwentArticle art2 = em.find(DeckArticle.class,art.id);
+			DeckGwentArticle art2 = em.find(DeckGwentArticle.class,art.id);
 			art.editDate = art2.editDate;
 		}
 		if (art.cards != null) {
@@ -95,9 +94,9 @@ public class JPADeckArticle implements GwentDeckArticleRepository  {
 		return art;
 	}
 
-	private Stream<DeckGwentArticle> list(EntityManager em,int offset,int amount,int tier,GwentCard.Faction fac, GwentCard.Leader lead,Boolean isStandard,Game game) {
-		TypedQuery<DeckArticle> q= em.createQuery("select a from DeckArticle a WHERE published = 1 AND" + 
-				HSONLY + (tier == 0 ? "" : " AND tier = " + tier)+
+	private Stream<DeckGwentArticle> list(EntityManager em,int offset,int amount,int tier,GwentCard.Faction fac, GwentCard.Leader lead,Game game) {
+		TypedQuery<DeckGwentArticle> q= em.createQuery("select a from DeckGwentArticle a WHERE published = 1 AND" + 
+				GWONLY + (tier == 0 ? "" : " AND tier = " + tier)+
 				(fac == null ? "" : " AND faction = '" + fac + "'") +
 				(lead == null ? "" : " AND leader = '" + lead + "'") +
 				(game == null ? "" : " AND game = '" + game + "'") +
@@ -109,7 +108,7 @@ public class JPADeckArticle implements GwentDeckArticleRepository  {
 
 
 	private Stream<DeckGwentArticle> listByCreator(EntityManager em, long id) {
-		List<DeckGwentArticle> art = em.createQuery("select a from DeckGwentArticle a where published = 1 AND creator = :id AND" + GWONLY + BYDATE, DeckArticle.class)
+		List<DeckGwentArticle> art = em.createQuery("select a from DeckGwentArticle a where published = 1 AND creator = :id AND" + GWONLY + BYDATE, DeckGwentArticle.class)
 				.setParameter("id", id)
 				.getResultList();
 		return art.stream();

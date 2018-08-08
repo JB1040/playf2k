@@ -6,7 +6,9 @@
     <persistence-unit name="defaultPersistenceUnit" transaction-type="RESOURCE_LOCAL">
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
         <non-jta-data-source>DefaultDS</non-jta-data-source>
-        <properties>
+        <properties>      
+     <property name="javax.persistence.schema-generation.scripts.action" value="create"/>
+      <property name="javax.persistence.schema-generation.scripts.create-target" value="sampleCreate.ddl"/>
             <property name="hibernate.dialect" value="org.hibernate.dialect.MySQLDialect"/>
         </properties>
     </persistence-unit>

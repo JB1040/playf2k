@@ -21,6 +21,7 @@ libraryDependencies += "org.hibernate" % "hibernate-core" % "5.2.5.Final"
 libraryDependencies ++= Seq(javaWs)
 libraryDependencies += javaWs % "test"
 libraryDependencies += "org.mockito" % "mockito-core" % "2.1.0" % "test"
+libraryDependencies ++= Seq(evolutions, jdbc)
 
 // Testing libraries for dealing with CompletionStage...
 libraryDependencies += "org.assertj" % "assertj-core" % "3.6.2" % Test

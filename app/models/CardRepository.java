@@ -13,5 +13,6 @@ public interface CardRepository {
 
     
     CompletionStage<Stream<Object[]>> list();
+    CompletionStage<Stream<Card>> all();
 
 }

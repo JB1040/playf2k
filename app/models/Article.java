@@ -4,6 +4,8 @@ import java.util.Date;
 
 import javax.persistence.*;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import models.Article.ArtType;
 import play.data.validation.Constraints.Required;
 
@@ -40,6 +42,12 @@ public class Article {
 
     @Enumerated(EnumType.STRING)
     public ArtType type;
+    
+    @Transient
+    @JsonIgnore
+    public ArtType getTheType() {
+    	return type;
+    }
     
     
     public boolean published;

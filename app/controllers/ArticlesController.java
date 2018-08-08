@@ -6,18 +6,28 @@ import javax.inject.*;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
 import akka.actor.Scheduler;
+import models.AdRepository;
+import models.Advertisement;
 import models.Article;
 import models.Article.ArtType;
 import models.Article.Game;
 import models.ArticleFeatured.Target;
 import models.DeckArticle.Mode;
+import models.filters.ArticleFilters;
 import models.ArticleRepository;
 import models.FeaturedRepository;
 import models.JPAArticle;
 import models.User;
 import models.UserRepository;
+import models.hibernateModels.BaseArticle;
+import models.hibernateModels.BaseDeckArticle;
+import models.hibernateModels.BaseHearthstoneDeckArticle;
+import models.hibernateModels.TextArticle;
 import play.libs.concurrent.HttpExecutionContext;
 import play.data.DynamicForm;
 import play.data.Form;
@@ -28,6 +38,7 @@ import play.mvc.*;
 import play.mvc.Http.Request;
 import play.libs.ws.*;
 import java.util.concurrent.Executor;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -43,6 +54,9 @@ import scala.collection.immutable.Stream;
 import scala.concurrent.ExecutionContext;
 import scala.concurrent.duration.Duration;
 import views.html.articleIndex;
+import views.html.advertisementIndex;
+import views.html.overlaySQR;
+import views.html.overlayREC;
 import scala.concurrent.ExecutionContextExecutor;
 import static play.libs.Json.toJson;
 import static java.util.concurrent.CompletableFuture.supplyAsync;
@@ -56,6 +70,8 @@ public class ArticlesController extends Controller {
 	private final ActorSystem actorSystem;
 	private final ExecutionContextExecutor exec;
 	private final ArticleRepository articleRepository;
+	private final models.hibernateModels.ArticleRepository artRep2;
+	private final AdRepository adRepository;
 	private final HttpExecutionContext ec;
 	private final UserController userc;
 	private final UserRepository userRep;
@@ -74,8 +90,11 @@ public class ArticlesController extends Controller {
 	 */
 	@Inject
 	public ArticlesController(ActorSystem actorSystem, ExecutionContextExecutor exec,
-			ArticleRepository articleRepository, HttpExecutionContext ec,
-			UserController u,WSClient ws,UserRepository userRep,FeaturedRepository featuredRepository) {
+			ArticleRepository articleRepository,
+			AdRepository adRepository,HttpExecutionContext ec,
+			UserController u,WSClient ws,UserRepository userRep,FeaturedRepository featuredRepository
+			,models.hibernateModels.ArticleRepository rep2
+			) {
 		this.actorSystem = actorSystem;
 		this.exec = exec;
 		this.articleRepository = articleRepository;
@@ -84,6 +103,8 @@ public class ArticlesController extends Controller {
 		this.featuredRepository = featuredRepository;
 		this.userRep = userRep;
 		this.userc = u;
+		this.adRepository = adRepository;
+		this.artRep2 =rep2;
 	}
 
 
@@ -103,20 +124,41 @@ public class ArticlesController extends Controller {
 	//    
 
 	public CompletionStage<Result> getArticle(long id) {
-		return articleRepository.get(id).thenApplyAsync(art -> {
-			art.author.hashpw = null;
+		return artRep2.get(id).thenApplyAsync(art -> {
+			if (art != null && art.author != null) {
+				art.author.hashpw = null;
+			}
+			if (art != null) {
+				art.getRecommended().forEach(a -> {
+					a.setRecommended(null);
+					if (a instanceof BaseDeckArticle) {
+						((BaseDeckArticle<?>)a).setDecks(null);
+						((BaseDeckArticle<?>)a).setRecommended(null);
+						((BaseDeckArticle<?>)a).setSimilar(null);
+					}
+				});
+//				System.out.println(toJson(  ((BaseDeckArticle)art).getDecks()  )  );
+				if (art instanceof BaseDeckArticle) {
 
+					((BaseDeckArticle<?>)art).getSimilar().forEach(a -> {
+						a.setDecks(null);
+						a.setRecommended(null);
+						a.setSimilar(null);
+					});
+				}
+			}
 			return ok(toJson(art));
-		}, ec.current());
+		});
 	}
 
 	public CompletionStage<Result> getArticles(int offset,int amount,String type,String game) {
 		try {
-			Article.ArtType type2 = type == null || type.equals("")? null : ArtType.valueOf(type);
-			Article.Game game2 = game == null || game.equals("")? null : Game.valueOf(game);
-			return articleRepository.list(offset,amount,type2,game2).thenApplyAsync(artStream -> {
-
-				return ok(toJson(loadTwitch(artStream.collect(Collectors.toList()))));
+			enums.General.TextType type2 = type == null || type.equals("")? null : enums.General.TextType.valueOf(type);
+			enums.General.Game game2 = game == null || game.equals("")? null : enums.General.Game.valueOf(game);
+			return artRep2.list(offset,amount,enums.General.ArtType.ARTICLE, type2,game2, 0, null, false).thenApplyAsync(artStream -> {
+				return ok((JsonNode)ArticleFilters.noNothing.valueToTree(
+						loadTwitch(artStream.collect(Collectors.toList()))
+						));
 			}, ec.current());
 		} catch (IllegalArgumentException e) {
 			return supplyAsync(() -> ok(toJson(new ImmutablePair<>("error", "Could not parse parameters."))));
@@ -124,15 +166,15 @@ public class ArticlesController extends Controller {
 	}
 
 	public CompletionStage<Result> byAuthor(long id) {
-		return articleRepository.byAuthor(id).thenApplyAsync(artStream -> {
-			return ok(toJson(loadTwitch(artStream.collect(Collectors.toList()))));
+		return artRep2.byAuthor(id).thenApplyAsync(artStream -> {
+			return ok((JsonNode)ArticleFilters.noNothing.valueToTree(artStream));
 		}, ec.current());
 	}
 
 	public CompletionStage<Result> getFeatured() {
 		return featuredRepository.list().thenApplyAsync(artStream -> {
 			//artStream = artStream.map((art) -> {	art.author.hashpw = null; return art;});
-			return ok(toJson(artStream.map(art -> {
+			return ok((JsonNode)ArticleFilters.noNothing.valueToTree(artStream.map(art -> {
 				if (art.target == Target.ARTICLE) {
 					art.article.author.loadTwitch();
 					return art.article;
@@ -144,7 +186,7 @@ public class ArticlesController extends Controller {
 		}, ec.current());
 	}
 
-	public static java.util.stream.Stream<Article> loadTwitch(List<Article> arts) {
+	public static java.util.stream.Stream<BaseArticle> loadTwitch(List<BaseArticle> arts) {
 		WSRequest req = ArticlesController.ws.url("https://api.twitch.tv/kraken/streams");
 		StringBuilder channels = new StringBuilder();
 
@@ -185,51 +227,54 @@ public class ArticlesController extends Controller {
 
 
 	@Inject FormFactory factory;
-	@RequireCSRFCheck
-	public  CompletionStage<Result> doEditInsertArticle() {
-		Form<Article> form = factory.form(Article.class).bindFromRequest();
-		boolean doFeature =  form.field("featured").getValue().isPresent();
-		Request r = play.mvc.Http.Context.current().request();
-		return userc.isLogged().thenApplyAsync(bool -> {
-			if (bool) {
-				if (!form.hasErrors()) {
-					Article art =  form.get();
-
-					filterYoutubeTwitch(art);
-					if (art.id == -1) {
-						return articleRepository.add(art).thenApplyAsync(art2 -> {
-							if (doFeature) {
-								try {
-								featuredRepository.editID(art2.id).toCompletableFuture().get();
-								} catch (Exception e5) {
-									e5.printStackTrace();
-								}
-							}
-							return Results.found("http://f2k.gg/articles/_" + art2.id);
-						}, ec.current()).toCompletableFuture().join();
-					} else {
-						return articleRepository.edit(art).thenApplyAsync(art2 -> {
-							if (doFeature) {
-								try {
-								featuredRepository.editID(art2.id).toCompletableFuture().get();
-								} catch (Exception e5) {
-									e5.printStackTrace();
-								}
-							}
-							return Results.found("http://d2416peknw0o5h.cloudfront.net/articles/_" + art2.id);
-						}, ec.current()).toCompletableFuture().join();
-					}
-					
-
-				} else {
-					return  ok(toJson(new ImmutablePair<>("errors", form.errorsAsJson())));
-				}
-			} else {
-				return redirect("/api/users/login?url=" + request().uri());
-			}
-		},ec.current());
-	}
-
+	//	@RequireCSRFCheck
+	//	public  CompletionStage<Result> doEditInsertArticle() {
+	//		Form<Article> form = factory.form(Article.class).bindFromRequest();
+	//		boolean doFeature =  form.field("featured").getValue().isPresent();
+	//		Request r = play.mvc.Http.Context.current().request();
+	//		return userc.isLogged().thenApplyAsync(bool -> {
+	//			if (bool) {
+	//				if (!form.hasErrors()) {
+	//					Article art =  form.get();
+	//					TextArticle art2 = new TextArticle();
+	//					art2.authorID = art.author.id;
+	//					art2.content= art.content;
+	//					art2.editDate = art.editDate;
+	//					art2.imageURL = art.imageURL;
+	//					art2.published = art.published;
+	//					art2.rating= art.rating;
+	//					art2.title= art.title;
+	//					art2.game = enums.General.Game.valueOf(art.game.toString());
+	//					art2.type = enums.General.TextType.valueOf(art.type.toString());
+	//
+	//					filterYoutubeTwitch(art);
+	//					if (art.id == -1) {
+	//						return artRep2.add(art2).thenApplyAsync(art3 -> {
+	//							if (doFeature) {
+	//								featuredRepository.editID(art3.id).toCompletableFuture().join();
+	//							}
+	//							return Results.found("http://f2k.gg/articles/_" + art3.id);
+	//						}, ec.current()).toCompletableFuture().join();
+	//					} else {
+	//						art2.id = art.id;
+	//						return artRep2.edit(art2).thenApplyAsync(art3 -> {	
+	//							if (doFeature) {
+	//								featuredRepository.editID(art3.id).toCompletableFuture().join();
+	//							}
+	//							return Results.found("http://d2416peknw0o5h.cloudfront.net/articles/_" + art3.id);
+	//						}, ec.current()).toCompletableFuture().join();
+	//					}
+	//
+	//
+	//				} else {
+	//					return  ok(toJson(new ImmutablePair<>("errors", form.errorsAsJson())));
+	//				}
+	//			} else {
+	//				return redirect("/api/users/login?url=" + request().uri());
+	//			}
+	//		},ec.current());
+	//	}
+	//
 	private void filterYoutubeTwitch(Article art) {
 		String img = art.imageURL;
 		if (img.toLowerCase().contains("youtube")) {
@@ -242,27 +287,27 @@ public class ArticlesController extends Controller {
 
 		}
 	}
-
-
-	@play.filters.csrf.AddCSRFToken
-	public CompletionStage<Result> editInsertArticle(Long id) {
-		return userc.isLogged().thenApplyAsync(bool -> {
-			if (bool) {
-				return articleRepository.get(id).thenApplyAsync(art -> {
-
-					art = art == null ? new Article() : art;
-
-					List<User> users = (List<User>) userRep.list(0, 200, null).toCompletableFuture().join().collect(Collectors.toList());
-					return ok(articleIndex.render(art,users));
-				},ec.current()).toCompletableFuture().join();
-			} else {
-				return redirect("/api/users/login?url=" + request().uri());
-			}
-		},ec.current());
-	}
-
+	//
+	//
+	//	@play.filters.csrf.AddCSRFToken
+	//	public CompletionStage<Result> editInsertArticle(Long id) {
+	//		return userc.isLogged().thenApplyAsync(bool -> {
+	//			if (bool) {
+	//				return artRep2.get(id).thenApplyAsync(art -> {
+	//
+	//					TextArticle art2 = art == null ? new TextArticle() : (TextArticle)art;
+	//
+	//					List<User> users = (List<User>) userRep.list(0, 200, null).toCompletableFuture().join().collect(Collectors.toList());
+	//					return ok(articleIndex.render(art2,users));
+	//				},ec.current()).toCompletableFuture().join();
+	//			} else {
+	//				return redirect("/api/users/login?url=" + request().uri());
+	//			}
+	//		},ec.current());
+	//	}
+	//
 	public CompletionStage<Result> upvoteArticle(long id) {
-		return articleRepository.upvote(id).thenApplyAsync(art -> {
+		return artRep2.upvote(id).thenApplyAsync(art -> {
 
 			return ok(toJson(art));
 		},ec.current());
@@ -270,7 +315,123 @@ public class ArticlesController extends Controller {
 	}
 
 
+	public CompletionStage<Result> overlaySQR() {
+		return adRepository.list().thenApplyAsync(ads -> {
+
+			List<String> urls = ads.stream().map((ad) -> ad.imageSQR)
+					.filter(imgSqr -> imgSqr != null && !imgSqr.equals(""))
+					.collect(Collectors.toList());
+
+			return ok(overlaySQR.render(toJson(urls)));
+		},ec.current());
+	}
+
+
+	public CompletionStage<Result> overlayREC() {
+
+		return adRepository.list().thenApplyAsync(ads -> {
+
+			List<String> urls = ads.stream().map((ad) -> ad.imageRECT)
+					.filter(imgRect -> imgRect != null && !imgRect.equals(""))
+					.collect(Collectors.toList());
+
+			return ok(overlayREC.render(toJson(urls)));
+		},ec.current());
+	}
+
+	public CompletionStage<Result> jsonREC() {
+
+		return adRepository.list().thenApplyAsync(ads -> {
+
+			List<String> urls = ads.stream().map((ad) -> ad.imageRECT)
+					.filter(imgRect -> imgRect != null && !imgRect.equals(""))
+					.collect(Collectors.toList());
+
+			return ok(toJson(urls));
+		},ec.current());
+	}
+
+	public CompletionStage<Result> jsonSQR() {
+
+		return adRepository.list().thenApplyAsync(ads -> {
+
+			List<String> urls = ads.stream().map((ad) -> ad.imageSQR)
+					.filter(imagSQR -> imagSQR != null && !imagSQR.equals(""))
+					.collect(Collectors.toList());
+
+			return ok(toJson(urls));
+		},ec.current());
+	}
 
 
 
+	@RequireCSRFCheck
+	public  CompletionStage<Result> doEditAds() {
+		Form<AdList> form = factory.form(AdList.class).bindFromRequest();
+		Request r = play.mvc.Http.Context.current().request();
+		return userc.isLogged().thenApplyAsync(bool -> {
+			if (bool) {
+				if (!form.hasErrors()) {
+					AdList ads =  form.get();
+					return adRepository.update(ads.getAds()).thenApplyAsync(ads2 -> {
+						return ok(toJson(ads2));
+					}, ec.current()).toCompletableFuture().join();
+
+
+				} else {
+					return  ok(toJson(new ImmutablePair<>("errors", form.errorsAsJson())));
+				}
+			} else {
+				return redirect("/api/users/login?url=" + request().uri());
+			}
+		},ec.current());
+	}
+
+	@play.filters.csrf.AddCSRFToken
+	public CompletionStage<Result> editAds() {
+		return userc.isLogged().thenApplyAsync(bool -> {
+			if (bool) {
+				return adRepository.list().thenApplyAsync(ads -> {
+
+					System.out.println(ads);
+					return ok(advertisementIndex.render(ads));
+				},ec.current()).toCompletableFuture().join();
+			} else {
+				return redirect("/api/users/login?url=" + request().uri());
+			}
+		},ec.current());
+	}
 }
+
+//	public CompletionStage<Result> doBeta(Long id) {
+//		return articleRepository.list(0, 10000, null, null).thenApplyAsync(arts -> {
+//			List<BaseArticle> newArts = artRep2.list(0, 10000,enums.General.ArtType.ARTICLE,null, null, 0, null, false).toCompletableFuture().join().collect(Collectors.toList());
+//			System.out.println(toJson(newArts));
+//			if (newArts.size() != 0) {
+//				System.out.println("EXISTS");
+//				return ok(toJson(newArts));
+//			}
+//			ObjectMapper mapper = new ObjectMapper();
+//			ArrayNode json = mapper.createArrayNode();
+//
+//			arts.forEach(art -> {
+//				TextArticle art2 = new TextArticle();
+//				art2.id = art.id;
+//				art2.authorID = art.authorID;
+//				art2.content= art.content;
+//				art2.editDate = art.editDate;
+//				art2.imageURL = art.imageURL;
+//				art2.published = art.published;
+//				art2.rating= art.rating;
+//				art2.title= art.title;
+//				art2.game = enums.General.Game.valueOf(art.game.toString());
+//				art2.type = enums.General.TextType.valueOf(art.type.toString());
+//				json.add(toJson(artRep2.add(art2).toCompletableFuture().join()));
+//			});
+//			return ok(json);
+//		},ec.current());
+//	}
+
+
+
+

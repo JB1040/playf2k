@@ -1,0 +1,182 @@
+@*
+ * This template takes a single argument, a String containing a
+ * message to display.
+ *@
+@(article: DeckGwentArticle,token: com.fasterxml.jackson.databind.JsonNode,author: List[User])
+
+@import helper._
+@import com.fasterxml.jackson.databind.JsonNode
+@main("Edit Deck - Fade2Karma") {
+	@header()
+	<div _ngcontent-c1="" class="F2K-column">
+    	<div _ngcontent-c1="" class="clearfix featured" style="margin-bottom: 40px">
+    	<br>
+    		<h1 style="text-align:center;">Edit or create Deck</h1>
+    		<br><br>
+			<form action="/api/decks/editgw" method="post">
+			@CSRF.formField
+			<div style="text-align:center">
+			<input type="hidden" name="id" value="@if(article.id == null) {-1} else {@article.id}">
+			<input type="hidden" name="rating" value="@if(article.rating == null) {0} else {@article.rating}">
+			<select id="beep" name="author.id">
+			@if(article.author !=null) {
+    			@for(a <- author){
+        			<option value="@a.id" @if(article.author.id == a.id) {selected}>@a.username</option>
+    			}
+    		} else {
+    			   @for(a <- author){
+        			<option value="@a.id" @if("Fade2Karma".equals(a.username)) {selected}>@a.username</option>
+    			}
+    		}
+			</select><br><br>
+			Title: <input name="title" value="@article.title"> <br><br>
+	
+			<select id="game" name="game">
+				<option value="HS" @if(article.game == enums.General.Game.HS) {selected} >Hearthstone</option>
+				<option value="GWENT" @if(article.game == enums.General.Game.GWENT) {selected}>Gwent</option>
+			</select>
+			<br><br>
+			<div id="gwcontent"/>
+				<select name="faction" id="factionSelect" >
+				<option value="">SELECT FACTION</option>
+    			@for(fac <- models.GwentCard.Faction.values()){
+        			<option value="@fac.name()">@fac.toString()</option>
+    			}
+			
+				</select><br><br>
+				<select name="leader" id="leaderSelect" >
+				<option value="">SELECT LEADER</option>
+    			@for(fac <- models.GwentCard.Leader.values()){
+        			<option value="@fac.name()">@fac.toString()</option>
+    			}
+			
+				</select><br><br>
+				Add card: <input id="newcGW" value=""> <button id="addGW" type="button">add</button><br><br>
+				<ul id="cardListGW" style="width:100%; text-align:left; max-height:280px; column-count:3; -webkit-column-count:3; -moz-column-count:3;">
+	
+				</ul>
+			
+			</div>
+			<br><br>
+			
+			<select name="tier" >
+			<option value="0" selected>None (T0)</option>
+			<option value="1">Tier 1</option>
+			<option value="2">Tier 2</option>
+			<option value="3">Tier 3</option>
+			<option value="4">Tier 4</option>
+			<option value="5">Tier 5</option>
+			</select>
+			<br><br>
+            <textarea name="content" id="editor1" rows="10" >
+                <p class="b1">@article.content</p>
+            </textarea>
+
+            </div>
+            <input type="checkbox" name="updateTime" value="1">Update time stamp<br>
+            <button name="published" value="0" type="submit">Preview (unpublishes)</button>
+            <button name="published" value="1" type="submit">Submit</button>
+            <a href="@controllers.UserController.MAINURL"><button type="button">Cancel</button></a>
+            </form>
+        </div>
+    </div>
+	<script>
+		CKEDITOR.replace( 'editor1', {
+		 extraAllowedContent: 'b i img'
+		});
+		
+		var gwlist = $("#cardListGW");
+		var contentGW= $("#gwcontent");
+		var innerGW = contentGW.html();
+		var buttonGW = $("#addGW");
+		var innGW = $("#newcGW");
+		var cardsGW = [];
+		
+		var addCardGW = function(card) { 
+			cardsGW.push(card.actualVal);
+			return '<li >' + 
+					card.label + '<button type="button" style="left: 10px;">delete</button></li>' ;
+			
+		};
+	
+		var sourceGW = @Html(token.toString());
+		innGW.autocomplete({
+		    source: sourceGW,
+		    minLength: 2,
+			select: function(e,ui) {
+				var f = ui.item.value;
+				var j = sourceGW.length;
+				console.log("selected!");
+				for (var i =0; i< j; i++) {
+					if (sourceGW[i].label == f) {
+						console.log(sourceGW[i]);
+						gwlist.append(addCardGW(sourceGW[i]));
+						break;
+					}
+				}
+				innGW.val("");
+				e.preventDefault();
+			}
+		});
+		
+		gwlist.on("click", "li > button", function() {
+	 				var i = $(this).parent().index();
+	 				$(this).parent().remove();
+	 				cardsGW.splice(i,1);
+		});
+
+		
+		
+		$("form").submit(function(e) {
+		  for (var i= 0; i < cardsGW.length; i++) {
+		   $(this).append('<input type="hidden" name="cards[' + i + '].dbId" value="' +cardsGW[i] + '">' );
+		  }
+		});
+		
+
+		
+		$("#factionSelect").change(function () {
+        	var filter = $("#factionSelect  option:selected").text();
+        		var newSource = sourceGW.filter(function(elem) {
+        	   		return (filter == "SELECT FACTION") || elem.faction == "Neutral" || elem.faction == filter;
+        	   		
+        		});
+        		
+        	innGW.autocomplete('option', 'source', newSource);
+        	
+    	});
+    	
+    	
+    	   @if(article != null) {
+			@if(article.faction != null) {
+				$("#factionSelect").val("@article.faction.name()");
+				$("#factionSelect").trigger('change');
+			}
+			@if(article.leader != null) {
+				$("#leaderSelect").val("@article.leader.name()");
+				$("#leaderSelect").trigger('change');
+			}
+			@if(article.cards != null) {
+
+				@for(card <- article.cards) {
+					card = {};
+					card.label = "@card.name";
+					card.actualVal = @card.dbId;
+					gwlist.append(addCardGW(card));
+				}
+			}
+		}
+		
+	</script>
+		<style>
+		#cardListGW > li {
+		 height: 25px;
+		 border-right: 3px ridge;
+		}
+		#cardListGW > li	 > button {
+			float:right;
+			margin-right:20px;
+			margin-top:2px;
+		}
+		</style>
+}

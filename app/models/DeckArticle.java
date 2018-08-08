@@ -63,7 +63,7 @@ public class DeckArticle implements play.data.validation.Constraints.Validatable
 
 
 	@BatchSize(size=30)
-	@ManyToMany(fetch = FetchType.EAGER,cascade=CascadeType.PERSIST)
+	@ManyToMany(cascade=CascadeType.PERSIST)
 	@JoinTable(
 			name="deck_card",
 			joinColumns=@JoinColumn(name="deck_id", referencedColumnName="id"),
@@ -116,7 +116,8 @@ public class DeckArticle implements play.data.validation.Constraints.Validatable
 			for (Card c: cards) {
 				if (c.set != Card.Set.OG && c.set != Card.Set.KARA && 
 						c.set != Card.Set.GANGS && c.set != Card.Set.UNGORO &&
-						c.set != Card.Set.CORE && c.set != Card.Set.EXPERT1 && c.set != Card.Set.ICECROWN) {
+						c.set != Card.Set.CORE && c.set != Card.Set.EXPERT1 &&
+						c.set != Card.Set.ICECROWN && c.set != Card.Set.LOOTAPALOOZA) {
 					stand = false;
 					break;
 				}

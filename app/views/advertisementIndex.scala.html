@@ -1,0 +1,99 @@
+@*
+ * This template takes a single argument, a String containing a
+ * message to display.
+ *@
+@(ads: List[Advertisement])
+
+@import helper._
+
+@*
+ * Call the `main` template with two arguments. The first
+ * argument is a `String` with the title of the page, the second
+ * argument is an `Html` object containing the body of the page.
+ *@
+@main("Edit Advertisements - Fade2Karma") {
+	@header()
+	<div _ngcontent-c1="" class="F2K-column">
+    	<div _ngcontent-c1="" class="clearfix featured" style="margin-bottom: 40px">
+    	<br>
+    		<h1 style="text-align:center;">Edit or create Article</h1>
+    		<br><br>
+			<form  action="/api/ads/edit" method="post">
+			@CSRF.formField
+			<div style="text-align:center">
+			Add new advertisment
+			<br><br>
+			name:					<input id="adName" ><br><br>
+			SQUARE Image(340x252): <input id="adSqr" ><br><br>
+			RECTANGLE Image(344x157): <input id="adRect"><br><br>
+			<select id="game" name="game" >
+				<option value="HS" selected>Hearthstone</option>
+				<option value="GWENT">Gwent</option>
+			</select>
+			<button id="addAd" type="button">add</button><br><br>
+				<table id="adList" style="width:100%; text-align:left; max-height:280px; column-count:1; -webkit-column-count:1; -moz-column-count:1;">
+					<tr><th>name</th><th>SQR image</th><th>RECT image</th><th>game</th><th>del</th> </tr>
+				</table>
+            <button  type="submit">Save</button>
+            <a href="/"><button>Cancel</button></a>
+            </form>
+            
+        </div>
+        <script>
+        var adList =[];
+        var adUl = $("#adList");
+        $("#addAd").on("click", function() {
+        	ad = {};
+        	ad.name = $("#adName").val();
+        	ad.imageSQR = $("#adSqr").val();
+        	ad.imageRECT = $("#adRect").val();
+        	ad.game = $("#game").val();
+			adUl.append(addAd(ad));
+        });
+        
+        adUl.on("click", "tr >td > button", function() {
+	 				var i = $(this).parent().parent().index() - 1;
+	 				$(this).parent().parent().remove();
+	 				adList.splice(i,1);
+		});
+		
+       	var addAd = function(ad) { 
+			adList.push(ad);
+			return '<tr ><td>' + 
+					ad.name + '</td><td>'  +
+					ad.imageSQR + '</td><td>' +
+					ad.imageRECT + '</td><td>' +
+					ad.game + '</td><td>' +
+					'<button type="button" style="left: 10px;">delete</button></td></tr>' ;
+			
+		};
+		
+		$("form").submit(function(e) {
+		  for (var i= 0; i < adList.length; i++) {
+		   $(this).append('<input type="hidden" name="ads[' + i + '].name" value="' +adList[i].name + '">' );
+		   $(this).append('<input type="hidden" name="ads[' + i + '].imageSQR" value="' +adList[i].imageSQR + '">' );
+		   $(this).append('<input type="hidden" name="ads[' + i + '].imageRECT" value="' +adList[i].imageRECT + '">' ); 
+		   $(this).append('<input type="hidden" name="ads[' + i + '].game" value="' +adList[i].game + '">' );
+		  }
+		});
+		
+		
+        @if(ads != null) {
+				@for(ad <- ads) {
+					ad2 = {};
+					ad2.name = "@ad.name";
+					ad2.imageSQR = "@ad.imageSQR";
+					ad2.imageRECT = "@ad.imageRECT";
+					ad2.game = "@ad.game";
+					adUl.append(addAd(ad2));
+				}
+		}
+		</script>
+    </div>
+    <style>
+    table tr:nth-child(even){
+  		background-color: #DDDDDD;
+  		color: #000;
+	}
+</style>
+}

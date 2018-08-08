@@ -69,8 +69,10 @@ public class JPADeckArticle implements DeckArticleRepository  {
 
 	public DeckArticle edit(EntityManager em, DeckArticle art) {
 		art.author = em.find(User.class, art.author.id);
+		
+		DeckArticle art2 = em.find(DeckArticle.class,art.id);
+		art.rating = art2.rating;
 		if (art.editDate == null) {
-			DeckArticle art2 = em.find(DeckArticle.class,art.id);
 			art.editDate = art2.editDate;
 		}
 		art.heroCard = art.heroCard.dbId == -1 ?  null: em.find(Card.class, art.heroCard.dbId);

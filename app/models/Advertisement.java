@@ -5,11 +5,12 @@ import java.util.Date;
 import javax.persistence.*;
 
 import models.Article.ArtType;
+import models.Article.Game;
 import play.data.validation.Constraints.Required;
 
 @Entity
 @Table(name="advertisement")
-public class Article {
+public class Advertisement {
 
 	@Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -18,13 +19,10 @@ public class Article {
     @Required
     public String name;
 
-    @Required
     public String imageSQR;
     
-    @Required
     public String imageRECT;
 
-    
     @Enumerated(EnumType.STRING)
     public Game game;
 

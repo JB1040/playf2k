@@ -128,10 +128,8 @@ public class JPAUser implements UserRepository  {
 				return u;
 			}).toCompletableFuture().get();
 		} catch (InterruptedException | ExecutionException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			return u;
 		}
-		return null;
 	}
 
 	private User getByName(EntityManager em, String username) {

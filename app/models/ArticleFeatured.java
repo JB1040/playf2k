@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import models.Article.ArtType;
+import models.hibernateModels.BaseArticle;
 import play.data.validation.Constraints.Required;
 
 @Entity(name="ArticleFeatured")
@@ -25,7 +26,7 @@ public class ArticleFeatured {
 	
 	@OneToOne(fetch=FetchType.EAGER,cascade=CascadeType.PERSIST,optional=true)
     @JoinColumn(name="article_id")
-    public Article article;
+    public BaseArticle article;
 	
 	@OneToOne(fetch=FetchType.EAGER,cascade=CascadeType.PERSIST,optional=true)
     @JoinColumn(name="deck_id")

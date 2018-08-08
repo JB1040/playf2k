@@ -27,6 +27,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
 import controllers.ArticlesController;
@@ -91,12 +92,20 @@ public class DeckGwentArticle implements play.data.validation.Constraints.Valida
 
 	@Enumerated(EnumType.STRING)
 	@Column(name="faction")
+	@JsonIgnore
 	public Faction faction;
 	
 
 	@Enumerated(EnumType.STRING)
 	@Column(name="leader")
 	public Leader leader;
+	
+	
+	@JsonProperty("faction")
+	public String factionString() {
+	    return faction.toString();
+	}
+
 
 	@Override
 	public List<ValidationError> validate() {

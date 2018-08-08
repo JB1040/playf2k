@@ -8,6 +8,9 @@ import javax.persistence.EntityManager;
 import javax.persistence.LockModeType;
 import javax.persistence.TypedQuery;
 
+import models.hibernateModels.BaseArticle;
+import models.hibernateModels.TextArticle;
+
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
@@ -44,8 +47,21 @@ public class JPAFeatured implements FeaturedRepository  {
 		return supplyAsync(() -> wrap(em -> editID(em,newId)),executionContext);
 	}
 
+	
+	@Override
+	public CompletionStage<ArticleFeatured> editArticle(BaseArticle newId) {
+		return supplyAsync(() -> wrap(em -> editArticle(em,newId)),executionContext);
+	}
 
-    private <T> T wrap(Function<EntityManager, T> function) {
+
+    private ArticleFeatured editArticle(EntityManager em, BaseArticle newId) {
+		ArticleFeatured art = getByID(em, 1);
+		art.article = newId;
+		return em.merge(art);
+	}
+
+
+	private <T> T wrap(Function<EntityManager, T> function) {
         return jpaApi.withTransaction(function);
     }
     
@@ -67,7 +83,7 @@ public class JPAFeatured implements FeaturedRepository  {
     
     private ArticleFeatured editID(EntityManager em, long newId) {
 		ArticleFeatured art = getByID(em, 1);
-		art.article = em.find(Article.class,newId);
+		art.article = (BaseArticle) em.find(BaseArticle.class,newId);
 		return em.merge(art);
 	}
 

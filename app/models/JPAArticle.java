@@ -63,6 +63,8 @@ public class JPAArticle implements ArticleRepository {
 
 	public Article edit(EntityManager em, Article art) {
 		art.author = em.find(User.class, art.author.id);
+		Article art2 = em.find(Article.class,art.id);
+		art.rating = art2.rating;
 		art = em.merge(art);
 		return art;
 	}
@@ -89,7 +91,6 @@ public class JPAArticle implements ArticleRepository {
 				.createQuery("select a from Article a where published = 1 AND authorID = :id " + BYDATE,
 						Article.class)
 				.setParameter("id", id).getResultList();
-		System.out.println(art.size());
 		return art.stream();
 	}
 

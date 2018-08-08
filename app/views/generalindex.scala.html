@@ -1,0 +1,710 @@
+
+@(article: models.hibernateModels.BaseArticle,author: List[User],hsCards: com.fasterxml.jackson.databind.JsonNode,gwCards: com.fasterxml.jackson.databind.JsonNode)
+
+@import helper._
+@import enums.General._
+@import enums.Hearthstone._
+@import models.hibernateModels._
+@t = @{if(article.isInstanceOf[TextArticle]) "t" else (if(article.isInstanceOf[BaseHearthstoneDeckArticle]) "h" else (if(article.isInstanceOf[BaseGwentDeckArticle]) "g" else "n" ))}
+@at = @{if(t == "t") article.asInstanceOf[TextArticle] else null}
+@ah = @{if(t == "h") article.asInstanceOf[BaseHearthstoneDeckArticle] else null}
+@ag = @{if(t == "g") article.asInstanceOf[BaseGwentDeckArticle] else null}
+@main("Edit Article - Fade2Karma") {
+	@header()
+	<div _ngcontent-c1="" class="F2K-column">
+    	<div _ngcontent-c1="" class="clearfix featured" style="margin-bottom: 40px">
+    	<br>
+    		<h1 style="text-align:center;">Edit or create Article</h1>
+    		<br><br>
+			<form  action="/api/edit" method="post">
+			@CSRF.formField
+			<div style="text-align:center">
+			<input type="hidden" name="id" value="@if(article.id == null) {-1} else {@article.id}">
+			<input type="hidden" name="rating" value="@if(article.rating == null) {0} else {@article.rating}">
+			Title: <input name="title" value="@article.title"> <br><br>
+			Url: <input type="text" id="url" value="@article.url" name="url" maxlength="50" pattern="^[A-Za-z0-9-_\.~]+$" title="only url-safe characters: a-z A-Z 0-9 . - _ ~"/><br><br>
+			Image: <input name="imageURL" value="@article.imageURL"><br><br>
+
+			<select id="beep" class="noneLegend" name="author.id">
+			@if(article.author !=null) {
+    			@for(a <- author){
+        			<option value="@a.id" @if(article.authorID == a.id) {selected}>@a.username</option>
+    			}
+    		} else {
+    			   @for(a <- author){
+        			<option value="@a.id" @if("Fade2Karma".equals(a.username)) {selected}>@a.username</option>
+    			}
+    		}
+			</select><br><br>
+			<select name="game" id="game">
+				<option value="null" @if(t=="n") {selected}> 
+					SELECT GAME
+				</option> 
+				<option value="HS" @if((t == "t" && at.game == Game.HS) || t == "h") {selected}> 
+					Hearthstone
+				</option>
+				<option value="GWENT" 
+					@if((article.isInstanceOf[TextArticle] && article.asInstanceOf[TextArticle].game == Game.GWENT) ||
+						article.isInstanceOf[BaseGwentDeckArticle]
+					) {selected}>
+					Gwent
+				</option>
+				<option value="MAGIC" @if(article.isInstanceOf[TextArticle] && 
+					article.asInstanceOf[TextArticle].game == Game.MAGIC 
+					) {selected}>Magic the Gathering (TextArticle only!)</option>
+				<option value="FORTNITE" @if(article.isInstanceOf[TextArticle] && 
+					article.asInstanceOf[TextArticle].game == Game.FORTNITE 
+					) {selected}>Fortnite (TextArticle only!)</option>
+				<option value="OTHER" @if(article.isInstanceOf[TextArticle] && 
+					article.asInstanceOf[TextArticle].game == Game.OTHER 
+					) {selected}>Other</option>
+			</select><br><br>
+			<select id="artType" name="artType">
+    			<option value="null" @if(t=="n") {selected}> 
+					SELECT ARTICLE TYPE
+				</option>
+				<option value="ARTICLE" @if(t=="t") {selected}> 
+					Text Article
+				</option> 
+				<option value="DECK" @if(t=="h" || t=="g") {selected}> 
+					Deck Article
+				</option> 
+				<option value="TIERDECK" @if((t=="h" && article.isInstanceOf[BaseHSLegendDeck])) {selected}> 
+					Top 25 Article
+				</option> 
+			</select><br>
+			<div class="legend">
+			Player name: <input name="player" class="legend" value="@if(article.isInstanceOf[BaseHSLegendDeck]) {@article.asInstanceOf[BaseHSLegendDeck].player}"><br><br>
+			rank: <input name="rank" class="legend" value="@if(article.isInstanceOf[BaseHSLegendDeck]) {@article.asInstanceOf[BaseHSLegendDeck].rank}"><br><br>
+			Server: <select id="server" name="server">
+			    @for(t2 <- Server.values()){
+        			<option value="@t2.toString()"  
+        				@if(article.isInstanceOf[BaseHSLegendDeck] && article.asInstanceOf[BaseHSLegendDeck].server == t2) {selected}
+        				>@t2.toString().toLowerCase()
+        			</option>
+    			}
+			</select><br>
+			</div>
+			<select id="typee" class="article" name="type">
+    			@for(t2 <- TextType.values()){
+        			<option value="@t2.toString()"  
+        				@if(t=="t"  && 
+        					at.getTheType() == t2) {selected}
+        				>@t2.toString().toLowerCase()
+        			</option>
+    			}
+			</select><br><br>
+			
+			<div class="deck"  id="hshero"/>
+				<select id="heroSelect" class="deck hearthstone" >
+				<option value="NEUTRAL" @if(article.isInstanceOf[BaseHearthstoneDeckArticle] && 
+					article.asInstanceOf[BaseHearthstoneDeckArticle].heroClass ==null) {selected}>Select HS HERO/Neutral</option>
+				<option value="WARRIOR" @if(article.isInstanceOf[BaseHearthstoneDeckArticle] && 
+					article.asInstanceOf[BaseHearthstoneDeckArticle].heroClass ==Hero.WARRIOR) {selected}>Warrior</option>
+				<option value="PRIEST" @if(article.isInstanceOf[BaseHearthstoneDeckArticle] && 
+					article.asInstanceOf[BaseHearthstoneDeckArticle].heroClass ==Hero.PRIEST) {selected}>Priest</option>
+				<option value="WARLOCK" @if(article.isInstanceOf[BaseHearthstoneDeckArticle] && 
+					article.asInstanceOf[BaseHearthstoneDeckArticle].heroClass ==Hero.WARLOCK) {selected}>Warlock</option>
+				<option value="SHAMAN" @if(article.isInstanceOf[BaseHearthstoneDeckArticle] && 
+					article.asInstanceOf[BaseHearthstoneDeckArticle].heroClass ==Hero.SHAMAN) {selected}>Shaman</option>
+				<option value="HUNTER" @if(article.isInstanceOf[BaseHearthstoneDeckArticle] && 
+					article.asInstanceOf[BaseHearthstoneDeckArticle].heroClass ==Hero.HUNTER) {selected}>Hunter</option>
+				<option value="ROGUE" @if(article.isInstanceOf[BaseHearthstoneDeckArticle] && 
+					article.asInstanceOf[BaseHearthstoneDeckArticle].heroClass ==Hero.ROGUE) {selected}>Rogue</option>
+				<option value="PALADIN" @if(article.isInstanceOf[BaseHearthstoneDeckArticle] && 
+					article.asInstanceOf[BaseHearthstoneDeckArticle].heroClass ==Hero.PALADIN) {selected}>Paladin</option>
+				<option value="MAGE" @if(article.isInstanceOf[BaseHearthstoneDeckArticle] && 
+					article.asInstanceOf[BaseHearthstoneDeckArticle].heroClass ==Hero.MAGE) {selected}>Mage</option>
+				<option value="DRUID" @if(article.isInstanceOf[BaseHearthstoneDeckArticle] && 
+					article.asInstanceOf[BaseHearthstoneDeckArticle].heroClass ==Hero.DRUID) { selected}>Druid</option>
+			
+				</select><br><br>	
+						
+				<select id="hsmode" class="deck hearthstone"  >
+				<option value="CON"  @if(article.isInstanceOf[BaseHearthstoneDeckArticle] && 
+					(article.asInstanceOf[BaseHearthstoneDeckArticle].mode ==null || article.asInstanceOf[BaseHearthstoneDeckArticle].mode == Mode.CON)) {selected}>Constructed</option>
+				<option value="ARENA" @if(article.isInstanceOf[BaseHearthstoneDeckArticle] && 
+					article.asInstanceOf[BaseHearthstoneDeckArticle].mode ==Mode.ARENA) {selected} >Arena</option>
+				<option value="BRAWL" @if(article.isInstanceOf[BaseHearthstoneDeckArticle] && 
+					article.asInstanceOf[BaseHearthstoneDeckArticle].mode ==Mode.BRAWL) {selected}>Brawl</option>
+				</select><br><br>
+				
+				<div class="gwent"/>
+				<select name="faction" id="factionSelect" >
+					<option value="">SELECT FACTION</option>
+        			@for(fac <- enums.Gwent.Faction.values()){
+        			<option value="@fac.name()" 
+        					@if(t == "g" && ag.faction == fac) {selected}>
+        				@fac.toString()
+        			</option>
+    			}
+			
+				</select><br><br>
+				<select name="leader" id="leaderSelect" >
+				<option value="">SELECT LEADER</option>
+				
+    			@for(fac <- enums.Gwent.Leader.values()){
+        			<option value="@fac.name().toUpperCase()"
+        					@if(t == "g" && ag.leader == fac) {selected}>
+        				@fac.toString()
+        			</option>
+    			}
+			
+				</select>
+			
+			</div>
+				
+				<select name="tier" class="deck noneLegend" >
+					@for(num <- 0 to 5){
+						<option value="@num" @if((t=="h" && ah.tier == num) || (t=="g" && ag.tier == num)) {selected}>
+							Tier @num 
+						</option>
+					}
+				</select><br>
+				<select name="difficulty" class="deck noneLegend" >
+					<option value="EASY" @if((t == "h" && ah.difficulty == Difficulty.EASY) ||
+						(t == "g" && ag.difficulty == Difficulty.EASY)
+						) {selected}>Easy</option>
+				<option value="MEDIUM" @if((t == "h" && ah.difficulty == Difficulty.MEDIUM) ||
+						(t == "g" && ag.difficulty == Difficulty.MEDIUM)
+					)  {selected}>Medium</option>
+				<option value="HARD" @if((t == "h" && ah.difficulty == Difficulty.HARD)||
+						(t == "g" && ag.difficulty == Difficulty.HARD)
+					)  {selected}>Hard</option>
+				</select>
+				<br><br>
+				
+					
+				Add card: <input id="newc" class="deck" value=""> <button id="add" type="button">add</button>
+				
+				OR USE DECKCODE: <input id="deckcode" class="deck" value=""> <button id="deckadd" type="button">load deck</button><br><br>
+				
+				<div class="tab" class="deck">
+  					<button class="tablinks" onclick="showDeck(event, 0)">Main deck</button>
+  					<button class="tablinks noneLegend" onclick="showDeck(event, 1)">Deck 2</button>
+  					<button class="tablinks noneLegend" onclick="showDeck(event, 2)">Deck 3</button>
+  					<button class="tablinks noneLegend" onclick="showDeck(event, 3)">Deck 4</button>
+  					<button class="tablinks noneLegend" onclick="showDeck(event, 4)">Deck 5</button>
+  					<br><br><br>
+  				<div id="deck0" class="tabcontent deck">
+  					Decks Title: <input name="decks[0].name" value="@if(article.isInstanceOf[BaseHearthstoneDeckArticle] && 
+						article.asInstanceOf[BaseHearthstoneDeckArticle].getDecks() != null &&
+						article.asInstanceOf[BaseHearthstoneDeckArticle].getDecks().lift(0) != None						
+						) {@article.asInstanceOf[BaseHearthstoneDeckArticle].getDecks().lift(0).get.name}
+  						"> <br><br>
+						<input  class="mode" type="hidden" name="decks[0].mode" value="@if(article.isInstanceOf[BaseHearthstoneDeckArticle]
+							) {@article.asInstanceOf[BaseHearthstoneDeckArticle].mode}
+						">
+						<input class="hero" type="hidden" name="decks[0].heroClass" value="@if(article.isInstanceOf[BaseHearthstoneDeckArticle]
+							) {@article.asInstanceOf[BaseHearthstoneDeckArticle].heroClass}
+						">
+				</div>
+  				<div id="deck1" class="tabcontent">
+  					Decks Title: 
+  					<input name="decks[1].name" value="@if(t=="h"&& ah.getDecks().lift(1) != None) {@ah.getDecks().lift(1).get.name}"> <br><br>
+						<input class="mode" type="hidden" name="decks[1].mode" value="@if(t== "h") {@ah.mode}">
+						<input class="hero" type="hidden" name="decks[1].heroClass" value="@if(t == "h") {@ah.heroClass}">
+				</div>
+  				<div id="deck2" class="tabcontent">
+  					Decks Title: 
+  					<input name="decks[2].name" value="@if(t=="h"&& ah.getDecks().lift(2) != None) {@ah.getDecks().lift(2).get.name}"> <br><br>
+						<input class="mode" type="hidden" name="decks[2].mode" value="@if(t== "h") {@ah.mode}">
+						<input class="hero" type="hidden" name="decks[2].heroClass" value="@if(t == "h") {@ah.heroClass}">
+				</div>
+  				<div id="deck3" class="tabcontent">
+  					Decks Title: 
+  					<input name="decks[3].name" value="@if(t=="h"&& ah.getDecks().lift(3) != None) {@ah.getDecks().lift(3).get.name}"> <br><br>
+						<input class="mode" type="hidden" name="decks[3].mode" value="@if(t== "h") {@ah.mode}">
+						<input class="hero" type="hidden" name="decks[3].heroClass" value="@if(t == "h") {@ah.heroClass}">
+				</div>
+  				<div id="deck4" class="tabcontent">
+  					Decks Title: 
+  					<input name="decks[4].name" value="@if(t=="h"&& ah.getDecks().lift(4) != None) {@ah.getDecks().lift(4).get.name}"> <br><br>
+						<input class="mode" type="hidden" name="decks[4].mode" value="@if(t== "h") {@ah.mode}">
+						<input class="hero" type="hidden" name="decks[4].heroClass" value="@if(t == "h") {@ah.heroClass}">
+				</div>
+				
+				<ul id="cardList" style="width:100%; text-align:left; max-height:280px; column-count:3; -webkit-column-count:3; -moz-column-count:3;">
+				</ul>
+
+			</div>
+			
+
+
+            </div>
+             <textarea class="noneLegend" name="content" id="editor1" rows="10" >
+                @article.content
+            </textarea>
+			<input type="checkbox" name="updateEdit" value="true">update timestamp<br>
+			<input type="checkbox" name="featured" value="true">Make featured (unfeatures other articles)<br>
+			
+			<br> recommended:<br> 
+				@for(num <- 0 to 2){
+					<input name="recommended2[@num].id" value="@if(article.getRecommended() != null && article.getRecommended().toList.lift(num) != None) {@article.getRecommended().toList.lift(num).get.id}"  >
+				}<br>
+				@for(num <- 3 to 5){
+					<input name="recommended2[@num].id" value="@if(article.getRecommended() != null && article.getRecommended().toList.lift(num) != None) {@article.getRecommended().toList.lift(num).get.id}"  >
+				}<br>
+			<div  class="deck">	
+			    <br> similar decks:<br> 
+				@for(num <- 0 to 2){
+					<input name="similar2[@num].id" value="@if(
+						(t =="h" && ah.getSimilar() != null && ah.getSimilar().toList.lift(num) != None)) {@ah.getSimilar().toList.lift(num).get.id} else if(
+						(t =="g" && ag.getSimilar() != null && ag.getSimilar().toList.lift(num) != None)) {@ag.getSimilar().toList.lift(num).get.id}"  >
+				}<br>
+				@for(num <- 3 to 5){
+					<input name="similar2[@num].id" value="@if(
+						(t =="h" && ah.getSimilar() != null && ah.getSimilar().toList.lift(num) != None)) {@ah.getSimilar().toList.lift(num).get.id} else if(
+						(t =="g" && ag.getSimilar() != null && ag.getSimilar().toList.lift(num) != None)) {@ag.getSimilar().toList.lift(num).get.id}"  >
+				}<br>
+			<div class="noneLegend"><br> Priority: <input name="importance" value="@if(t=="h" && ah.importance != null) {@ah.importance} else {0}"> <br> </div>
+			</div>
+            <button id="previewbt" type="submit"> Preview (unpublishes)</button>
+            <button id="submitbt" type="submit">Submit</button>
+            <a href="/"><button>Cancel</button></a>
+            </form>
+             
+        </div>
+    </div>
+    	<script>      
+    	var currCont = "<br />\r\n" + $("#editor1").val();
+    	$("#editor1").val(currCont
+    			.replace('\r','')
+    			.replace('\n','')
+    			.replace('<div class="clearfix" style="clear:both;"><\/div>','<div class="clearfix" style="clear:both; text-decoration:line-through; font-style:italic;">CLEARFIXLINE - DONT EDIT</div>')
+    			.replace(/<br \/>(((?!(<br \/>)).)*)<span class="f2kSpoiler">(.*?)<\/span data-info="spoiler">/gsmi,"<br />``$1$4``")
+    			//.replace(/<br \/>(.*?)<span class="f2kSpoiler">(.*?)<\/span data-info="spoiler">/gsmi,"<br />``$1$2``")
+    			.replace(/<span class="f2kHoverCard.*?>(.*?)<\/span>/gi,"`$1`")
+    			.substring(6)
+    			);
+    	CKEDITOR.replace( 'editor1', {
+		 			extraAllowedContent: {
+		 				'b i img div span p': {
+		 					attributes:'*',
+		 					styles:'*',
+		 					classes:'*'
+		 				},
+		 				'button': {
+		 					attributes: ['!class','!title'],
+		 					classes: 'f2kDeckCode'
+		 				},
+		 				'blockquote': {
+		 					attributes: ['data-lang'],
+		 					classes: 'twitter-tweet'
+		 				},
+		 				'script': {
+		 				 	match: function(e) {
+		 				 		return e.attributes.src && e.attributes.src.startsWith('https://platform.twitter.com')
+		 				 	},
+		 				 	attributes: ['async','!src','charset']
+		 				}
+		 			},
+		 			bodyClass: 'noneLegend'
+		});
+		
+	
+		var published = false;
+		
+		var currentDeck = 0;
+		var list = $("#cardList");
+		var button = $("#add");
+		var insert = $("#newc");
+		var cardsHS = [[],[],[],[],[]];
+		var cardsGW = [[],[],[],[],[]];
+		
+		$("#submitbt").click(function (e) {
+			published = true;
+		});
+		
+		var addCard = function(card,index,insert) { 
+			if (insert)
+				currCards[index].push(card);
+			if (index == currentDeck) {
+				return '<li >' + 
+					card.label + '<button type="button" style="left: 10px;">delete</button></li>' ;
+			} else {
+				return '';
+			}
+			
+		};
+		
+		
+	
+		var sourceHS = @Html(hsCards.toString());
+		var sourceGW = @Html(gwCards.toString());
+		var currCards;
+		var currSource;
+		var curr;
+		function setSource() {
+			if ($("#artType").val() === "ARTICLE") {
+			
+				$(".noneLegend").show();
+				$(".cke_1").show();
+			 	$(".legend").hide();
+				$(".article").show();
+				$(".deck").hide();
+				if ($("#game").val() === "GWENT") {
+					curr  = "g";
+			 		currCards = cardsGW;
+					currSource = sourceGW;
+				} else if ($("#game").val() === "HS"){
+					curr  = "h";
+			 		currCards = cardsHS;
+			 		currSource = sourceHS;
+				} else {
+				 curr = " ";
+				 currCards = [];
+				 currSource = [];
+				}
+				
+			} else if ($("#artType").val() === "DECK" || $("#artType").val() === "TIERDECK") {
+					$(".article").hide();
+					$(".deck").show();
+				if ($("#game").val() === "HS") {
+					$(".hearthstone").show();
+					$(".gwent").hide();
+					curr  = "h";
+			 		currCards = cardsHS;
+			 		currSource = sourceHS;
+				} else {
+					$(".hearthstone").hide();
+					$(".gwent").show();
+					curr  = "g";
+			 		currCards = cardsGW;
+					currSource = sourceGW;
+				}
+					if ($("#artType").val() === "TIERDECK") {
+			 			$(".noneLegend").hide();
+			 			$(".legend").show();
+			 			
+						$(".cke_1").hide();
+			 		} else {
+			 			$(".noneLegend").show();
+			 			$(".legend").hide();
+			 			
+						$(".cke_1").show();
+			 		}
+			}
+			
+		}
+		setSource();
+		insert.autocomplete({
+		    source: currSource,
+		    minLength: 2,
+			select: function(e,ui) {
+				var f = ui.item.value;
+				var j = currSource.length;
+				for (var i =0; i< j; i++) {
+					if (currSource[i].label == f) {
+						list.append(addCard(currSource[i],currentDeck,true));
+						break;
+					}
+				}
+				insert.val("");
+				e.preventDefault();
+			}
+		});
+		
+		list.on("click", "li > button", function() {
+	 		var i = $(this).parent().index();
+	 		$(this).parent().remove();
+	 		currCards[currentDeck].splice(i,1);
+		});
+		
+		function escapeHTML(text) {
+			return text.replace(/[\"&'\/<>]/g,function (a) {
+				return {
+					'"':'&quot;','&':'&amp;',"'":'&#39;',
+					"/":"&#47;",'<':'&lt;','>':'&gt;'
+				}[a];
+			});
+		
+		
+		};
+		
+		$("form").submit(function(e) {
+		 	for (var i= 0; i < currCards.length; i++) {
+		  		for (var j = 0; j<currCards[i].length; j++) {
+		  			$(this).append('<input type="hidden" name="decks[' + i + '].cards[' + j + '].dbId" value="' +currCards[i][j].id + '">' );
+		  		}
+		  	}
+		  	var thar = this;
+		  	e.preventDefault();
+		  	setTimeout( function() { 
+		  	
+		  		var text = $('#editor1').val();
+		  		var j = currSource.length;
+		  		var res = text
+		  				.replace('<div class="clearfix" style="clear:both; text-decoration:line-through; font-style:italic;">CLEARFIXLINE - DONT EDIT<\/div>','<div class="clearfix" style="clear:both;"></div>')
+		  				.replace(/&rsquo;/gi,"'").replace(/&#39;/gi,"'")
+		  				.replace(/``(.*?)(<br \/>|<ul>)(.*?)``/gims,'$1<span class="f2kSpoiler">$2$3</span data-info="spoiler">')
+		  				.replace(/`(.*?)`/gi, function (x,p1) {
+		  					for (var i =0; i< j; i++) {
+								if (currSource[i].label.toLowerCase() === p1.toLowerCase()) {
+									return '<span class="f2kHoverCard '+ currSource[i].rarity + '" data-id="'+ currSource[i].cardID +'">' +currSource[i].label + '</span>'; 
+								}
+							}
+   	 						return "`" + p1 + "`";
+						});
+				$('form').append('<input type="hidden" name="content2" value="' + escapeHTML(res) + '">' );
+				if (published) {
+					$('form').append('<input type="hidden" name="published" value="true">' );
+				}
+				thar.submit();
+		  },300);
+		});
+		
+
+		
+		$("#heroSelect").change(function () {
+			if (curr === "h") {
+        		var filter = $("#heroSelect  option:selected").text().toUpperCase();
+        		
+				$(".tabcontent .hero").val(filter);
+				
+    			$("#hsmode").trigger('change');
+        			var newSource = currSource.filter(function(elem) {
+        	   			return (filter == "SELECT HERO") || elem.hero== "NEUTRAL" || elem.hero == filter;
+        	   		
+        			});
+        		insert.autocomplete('option', 'source', newSource);
+        	}
+    	});
+    	
+    			
+		$("#factionSelect").change(function () {
+			if (curr === "g") {
+        	var filter = $("#factionSelect  option:selected").val();
+        		var newSource = currSource.filter(function(elem) {
+        	   		return (filter === "") || elem.faction == "NEUTRAL" || elem.faction == filter;
+        	   		
+        		});
+        		
+        	insert.autocomplete('option', 'source', newSource);
+        	}
+    	});
+    	
+    	$("#hsmode").change(function() {
+    		if (curr === "h") {
+    			$(".tabcontent .mode").val($(this).val());
+    			
+    		}
+    	});
+    	
+    	$("#heroSelect").trigger('change');
+    	
+    	$("#hsMode").trigger('change');
+    	
+    	$("#factionSelect").trigger('change');
+    	
+		$("#game,#artType").change(function () {
+			setSource();
+			$("#heroSelect").trigger('change');
+			$("#factionSelect").trigger('change');
+		});
+    	
+    	@if(t == "h" && ah.getDecks() != null) {
+			@for((deck, index) <-ah.getDecks().zipWithIndex) {
+				@for(card <- deck.getCards()) {
+					card = {};
+					card.label = "@card.name";
+					card.id = @card.dbId;
+					card.cardID = "@card.cardId";
+					list.append(addCard(card,@index,true));
+				}
+			}
+		}
+		@if(t == "g" && ag != null && ag.getDecks() != null) {
+			@for((deck, index) <-ag.getDecks().zipWithIndex) {
+				@for(card <- deck.getCards()) {
+					card = {};
+					card.label = "@card.name";
+					card.id = @card.dbId;
+					card.cardID = "@card.cardId";
+					list.append(addCard(card,@index,true));
+				}
+			}
+		}
+		
+	$("#deckadd").click(function (e) {
+			fromDecklist($("#deckcode").val());
+	});	
+	
+	var MSB = 0x80, REST = 0x7F;
+	var bytes = 0;
+	
+function read(buf, offset) {
+  	var res    = 0
+    	, offset = offset || 0
+    	, shift  = 0
+    	, counter = offset
+    	, b
+    	, l = buf.length
+
+ 	do {
+    	if (counter >= l) {
+      		bytes = 0;
+      		throw new RangeError('Could not decode varint')
+    	}
+    	b = buf[counter++]
+    	res += shift < 28
+      		? (b & REST) << shift
+      		: (b & REST) * Math.pow(2, shift)
+    	shift += 7
+  		} while (b >= MSB)
+
+  		bytes = counter - offset
+
+  		return res;
+	}
+	function fromDecklist(deckstring) {
+		var index2 = 0;
+		var binary = atob(deckstring);
+		var buffer = new Uint8Array(binary.length);
+		for (var q = 0; q < binary.length; q++) {
+			buffer[q] = binary.charCodeAt(q);
+		}
+		index2+=1;
+		
+		var version = read(buffer, index2);
+		
+		index2 += bytes;
+
+		const format = read(buffer, index2);
+		index2 += bytes;
+
+		const heroes = new Array(read(buffer, index2));
+		index2 += bytes;
+		for (var q = 0; q < heroes.length; q++) {
+			heroes[q] = read(buffer, index2);
+			index2 += bytes;
+		}
+
+		var cards2 = [];
+		for (var q = 1; q <= 3; q++) {
+			var c = read(buffer, index2);
+			index2 += bytes;
+			for (let z = 0; z < c; z++) {
+				
+				
+				var newc = read(buffer, index2);
+				index2 += bytes;
+				
+				var count =	q;
+				if (count === 3) {
+					count = read(buffer, index2);
+					index2 += bytes;
+				}
+				cards2.push([
+					newc,
+					count,
+				]);
+			}
+		}
+		cards2.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
+		currCards[currentDeck].splice(0,currCards[currentDeck].length);
+		list.html('');
+		cards2.forEach(c2 => {
+			var theId = c2[0]
+			var theCount = c2[1];
+			var j = currSource.length;
+			for (var i =0; i< j; i++) {
+				if (currSource[i].id == theId) {
+					
+					[...Array(theCount)].forEach(zz => list.append(addCard(currSource[i],currentDeck,true)));
+					
+					break;
+				}
+			};
+		});
+
+	}
+		
+		
+	</script>
+		<style>
+		#cardList > li {
+			list-style:none;
+		 	height: 25px;
+		 	border-right: 3px ridge;
+		 	width:89%;
+		}
+		#cardList > li > button {
+			margin-right:15px;
+			margin-top:2px;
+		}
+		</style>
+    
+   	 <style>
+
+/* Style the tab */
+.tab {
+    overflow: hidden;
+    border: 1px solid #ccc;
+    background-color: #f1f1f1;
+    width:100%;
+}
+
+/* Style the buttons inside the tab */
+.tab  .tablinks {
+    background-color: inherit;
+    float: left;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 14px 16px;
+    transition: 0.3s;
+    font-size: 17px;
+    width:20%;
+}
+
+/* Change background color of buttons on hover */
+.tab .tablinks:hover {
+    background-color: #ddd;
+}
+
+/* Create an active/current tablink class */
+.tab .tablinks.active {
+    background-color: #ccc;
+}
+
+/* Style the tab content */
+.tabcontent {
+    display: none;
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    border-top: none;
+}
+</style>
+
+
+
+<script>
+function showDeck(evt, num) {
+
+    var i, tabcontent, tablinks;
+    tabcontent = document.getElementsByClassName("tabcontent");
+    for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
+    }
+    tablinks = document.getElementsByClassName("tablinks");
+    for (i = 0; i < tablinks.length; i++) {
+        tablinks[i].className = tablinks[i].className.replace(" active", "");
+    }
+    document.getElementById("deck" + num).style.display = "block";
+	if (evt != null) {
+		evt.preventDefault();
+	    evt.currentTarget.className += " active";
+	}
+	list.html('');
+	currentDeck = num;
+	if (currCards != null && currCards.length > 0) {
+		currCards[currentDeck].forEach(c => {
+			list.append(addCard(c,currentDeck,false));
+		});
+	}
+	
+}
+showDeck(null,0);
+</script>
+}
