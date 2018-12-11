@@ -78,9 +78,25 @@ GET /overlaySQR						 controllers.ArticlesController.overlaySQR()
 
 GET /overlayREC					 controllers.ArticlesController.overlayREC()
 
-GET /jsonSQR						 controllers.ArticlesController.jsonSQR()
+GET /overlaySQRTP				 controllers.ArticlesController.overlaySQRTP()
+
+GET /overlayRECTP				 controllers.ArticlesController.overlayRECTP()
+
+GET /overlaySQRTPSlow			 controllers.ArticlesController.overlaySQRTPSlow()
+
+GET /overlayRECTPSlow			 controllers.ArticlesController.overlayRECTPSlow()
+
+GET /overlayWOW     			 controllers.ArticlesController.overlayWOW()
+
+GET /jsonSQR					 controllers.ArticlesController.jsonSQR()
 
 GET /jsonREC					 controllers.ArticlesController.jsonREC()
+
+GET /jsonSQRTP					 controllers.ArticlesController.jsonSQRTP()
+
+GET /jsonRECTP					 controllers.ArticlesController.jsonRECTP()
+
+GET /jsonWOW    				 controllers.ArticlesController.jsonWOW()
 
 GET    /api/ads/edit              controllers.ArticlesController.editAds()
 

@@ -1,0 +1,42 @@
+@* overlaySQR Template File *@
+@(ads: com.fasterxml.jackson.databind.JsonNode)
+
+@import com.fasterxml.jackson.databind.JsonNode
+<html>
+<head>
+<script src="@routes.Assets.versioned("javascripts/jquery-min.js")" type="text/javascript"></script>
+</head>
+<body style="padding:0;margin:0;">
+<img style="z-index:5; position:absolute;top:0px;left:0px;width:343.8px; height:162.6px; " id="logo" src=""/>
+<img id="buffer" style="opacity:0.01; width:0.01px; height:0.01px;">
+</body>
+<script>
+var ad = @Html(ads.toString());
+var num = -1;
+var theImg = document.getElementById('logo');
+var buf = document.getElementById('buffer');
+
+var checkUpdate= function() {
+	$.getJSON( "jsonRECTP", function( data ) {
+ 		if (ad != data) {
+ 			ad = data;
+ 		}
+	});
+}
+
+var loop = function() {
+	$(theImg).animate({opacity:0},700);
+	num = (num+1) % ad.length;
+	if (num == 0) {	
+		checkUpdate();
+	}
+	buf.src= ad[num];
+	setTimeout(function() {
+		theImg.src = ad[num];
+		setTimeout(function() { $(theImg).animate({opacity:1},700);},100);
+	},700);
+	setTimeout(loop,31500);
+}
+loop();
+</script>
+</html>

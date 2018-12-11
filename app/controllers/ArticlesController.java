@@ -1,65 +1,48 @@
 package controllers;
 
-import akka.actor.ActorSystem;
-import javax.inject.*;
+import static java.util.concurrent.CompletableFuture.supplyAsync;
+import static play.libs.Json.toJson;
 
-import org.apache.commons.lang3.tuple.ImmutablePair;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-
-import akka.actor.Scheduler;
-import models.AdRepository;
-import models.Advertisement;
-import models.Article;
-import models.Article.ArtType;
-import models.Article.Game;
-import models.ArticleFeatured.Target;
-import models.DeckArticle.Mode;
-import models.filters.ArticleFilters;
-import models.ArticleRepository;
-import models.FeaturedRepository;
-import models.JPAArticle;
-import models.User;
-import models.UserRepository;
-import models.hibernateModels.BaseArticle;
-import models.hibernateModels.BaseDeckArticle;
-import models.hibernateModels.BaseHearthstoneDeckArticle;
-import models.hibernateModels.TextArticle;
-import play.libs.concurrent.HttpExecutionContext;
-import play.data.DynamicForm;
-import play.data.Form;
-import play.data.FormFactory;
-import play.filters.csrf.RequireCSRFCheck;
-import play.libs.concurrent.HttpExecution;
-import play.mvc.*;
-import play.mvc.Http.Request;
-import play.libs.ws.*;
-import java.util.concurrent.Executor;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Executor;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import scala.collection.immutable.Stream;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+import org.apache.commons.lang3.tuple.ImmutablePair;
+
+import com.fasterxml.jackson.databind.JsonNode;
+
+import akka.actor.ActorSystem;
+import akka.actor.Scheduler;
+import models.AdRepository;
+import models.Article;
+import models.ArticleFeatured.Target;
+import models.ArticleRepository;
+import models.FeaturedRepository;
+import models.UserRepository;
+import models.filters.ArticleFilters;
+import models.hibernateModels.BaseArticle;
+import models.hibernateModels.BaseDeckArticle;
+import play.data.Form;
+import play.data.FormFactory;
+import play.filters.csrf.RequireCSRFCheck;
+import play.libs.concurrent.HttpExecutionContext;
+import play.libs.ws.WSClient;
+import play.libs.ws.WSRequest;
+import play.libs.ws.WSResponse;
+import play.mvc.Controller;
+import play.mvc.Http.Request;
+import play.mvc.Result;
 import scala.concurrent.ExecutionContext;
-import scala.concurrent.duration.Duration;
-import views.html.articleIndex;
-import views.html.advertisementIndex;
-import views.html.overlaySQR;
-import views.html.overlayREC;
 import scala.concurrent.ExecutionContextExecutor;
-import static play.libs.Json.toJson;
-import static java.util.concurrent.CompletableFuture.supplyAsync;
+import views.html.advertisementIndex;
 
 /**
  * The controller for the aeticles API
@@ -322,7 +305,7 @@ public class ArticlesController extends Controller {
 					.filter(imgSqr -> imgSqr != null && !imgSqr.equals(""))
 					.collect(Collectors.toList());
 
-			return ok(overlaySQR.render(toJson(urls)));
+			return ok(views.html.overlaySQR.render(toJson(urls)));
 		},ec.current());
 	}
 
@@ -335,7 +318,66 @@ public class ArticlesController extends Controller {
 					.filter(imgRect -> imgRect != null && !imgRect.equals(""))
 					.collect(Collectors.toList());
 
-			return ok(overlayREC.render(toJson(urls)));
+			return ok(views.html.overlayREC.render(toJson(urls)));
+		},ec.current());
+	}
+	
+	public CompletionStage<Result> overlaySQRTP() {
+		return adRepository.list().thenApplyAsync(ads -> {
+
+			List<String> urls = ads.stream().map((ad) -> ad.imageSQRTP)
+					.filter(imgSqr -> imgSqr != null && !imgSqr.equals(""))
+					.collect(Collectors.toList());
+
+			return ok(views.html.overlaySQRTP.render(toJson(urls)));
+		},ec.current());
+	}
+	
+	public CompletionStage<Result> overlaySQRTPSlow() {
+		return adRepository.list().thenApplyAsync(ads -> {
+
+			List<String> urls = ads.stream().map((ad) -> ad.imageSQRTP)
+					.filter(imgSqr -> imgSqr != null && !imgSqr.equals(""))
+					.collect(Collectors.toList());
+
+			return ok(views.html.overlaySQRTPSlow.render(toJson(urls)));
+		},ec.current());
+	}
+
+
+	public CompletionStage<Result> overlayRECTP() {
+
+		return adRepository.list().thenApplyAsync(ads -> {
+
+			List<String> urls = ads.stream().map((ad) -> ad.imageRECTTP)
+					.filter(imgRect -> imgRect != null && !imgRect.equals(""))
+					.collect(Collectors.toList());
+
+			return ok(views.html.overlayRECTP.render(toJson(urls)));
+		},ec.current());
+	}
+	
+	public CompletionStage<Result> overlayRECTPSlow() {
+
+		return adRepository.list().thenApplyAsync(ads -> {
+
+			List<String> urls = ads.stream().map((ad) -> ad.imageRECTTP)
+					.filter(imgRect -> imgRect != null && !imgRect.equals(""))
+					.collect(Collectors.toList());
+
+			return ok(views.html.overlayRECTPSlow.render(toJson(urls)));
+		},ec.current());
+	}
+
+	public CompletionStage<Result> overlayWOW() {
+
+		return adRepository.list().thenApplyAsync(ads -> {
+
+			List<String> urls = ads.stream().map((ad) -> ad.imageWOW)
+					.filter(imgRect -> imgRect != null && !imgRect.equals(""))
+					.collect(Collectors.toList());
+
+			return ok(views.html.overlayWOW.render(toJson(urls)));
 		},ec.current());
 	}
 
@@ -356,6 +398,41 @@ public class ArticlesController extends Controller {
 		return adRepository.list().thenApplyAsync(ads -> {
 
 			List<String> urls = ads.stream().map((ad) -> ad.imageSQR)
+					.filter(imagSQR -> imagSQR != null && !imagSQR.equals(""))
+					.collect(Collectors.toList());
+
+			return ok(toJson(urls));
+		},ec.current());
+	}
+	public CompletionStage<Result> jsonRECTP() {
+
+		return adRepository.list().thenApplyAsync(ads -> {
+
+			List<String> urls = ads.stream().map((ad) -> ad.imageRECTTP)
+					.filter(imgRect -> imgRect != null && !imgRect.equals(""))
+					.collect(Collectors.toList());
+
+			return ok(toJson(urls));
+		},ec.current());
+	}
+
+	public CompletionStage<Result> jsonSQRTP() {
+
+		return adRepository.list().thenApplyAsync(ads -> {
+
+			List<String> urls = ads.stream().map((ad) -> ad.imageSQRTP)
+					.filter(imagSQR -> imagSQR != null && !imagSQR.equals(""))
+					.collect(Collectors.toList());
+
+			return ok(toJson(urls));
+		},ec.current());
+	}
+	
+	public CompletionStage<Result> jsonWOW() {
+
+		return adRepository.list().thenApplyAsync(ads -> {
+
+			List<String> urls = ads.stream().map((ad) -> ad.imageWOW)
 					.filter(imagSQR -> imagSQR != null && !imagSQR.equals(""))
 					.collect(Collectors.toList());
 
@@ -393,7 +470,7 @@ public class ArticlesController extends Controller {
 			if (bool) {
 				return adRepository.list().thenApplyAsync(ads -> {
 
-					System.out.println(ads);
+					System.out.println(toJson(ads));
 					return ok(advertisementIndex.render(ads));
 				},ec.current()).toCompletableFuture().join();
 			} else {

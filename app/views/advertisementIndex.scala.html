@@ -26,13 +26,16 @@
 			name:					<input id="adName" ><br><br>
 			SQUARE Image(340x252): <input id="adSqr" ><br><br>
 			RECTANGLE Image(344x157): <input id="adRect"><br><br>
+			SQUARE Transparant Image(340x252): <input id="adSqrTP"><br><br>
+			RECTANGLE Transparant Image(344x157): <input id="adRectTP"><br><br>
+			WOW image: <input id="adWOW"><br><br>
 			<select id="game" name="game" >
 				<option value="HS" selected>Hearthstone</option>
 				<option value="GWENT">Gwent</option>
 			</select>
 			<button id="addAd" type="button">add</button><br><br>
 				<table id="adList" style="width:100%; text-align:left; max-height:280px; column-count:1; -webkit-column-count:1; -moz-column-count:1;">
-					<tr><th>name</th><th>SQR image</th><th>RECT image</th><th>game</th><th>del</th> </tr>
+					<tr><th>name</th><th>SQR image</th><th>RECT image</th><th>SQR TP image</th><th>RECT TP image</th><th>WOW image</th><th>game</th><th>del</th> </tr>
 				</table>
             <button  type="submit">Save</button>
             <a href="/"><button>Cancel</button></a>
@@ -47,6 +50,9 @@
         	ad.name = $("#adName").val();
         	ad.imageSQR = $("#adSqr").val();
         	ad.imageRECT = $("#adRect").val();
+        	ad.imageSQRTP = $("#adSqrTP").val();
+        	ad.imageRECTTP = $("#adRectTP").val();
+        	ad.imageWOW = $("#adWOW").val();
         	ad.game = $("#game").val();
 			adUl.append(addAd(ad));
         });
@@ -57,12 +63,19 @@
 	 				adList.splice(i,1);
 		});
 		
+		adUl.on("change","tr >td > input[type='text']",function(e) {
+  			adList[$(this).parent().parent().index()-1][$(this).attr('name')] = $(this).val();
+		});
+		
        	var addAd = function(ad) { 
 			adList.push(ad);
 			return '<tr ><td>' + 
-					ad.name + '</td><td>'  +
-					ad.imageSQR + '</td><td>' +
-					ad.imageRECT + '</td><td>' +
+					'<input type="text" name="name" value="'+ ad.name + '"/></td><td>'  +
+					'<input type="text" name="imageSQR" value="'+ ad.imageSQR + '"/></td><td>' +
+					'<input type="text" name="imageRECT" value="'+ ad.imageRECT + '"/></td><td>'  +
+					'<input type="text" name="imageSQRTP" value="'+ ad.imageSQRTP + '"/></td><td>'  +
+					'<input type="text" name="imageRECTTP" value="'+ ad.imageRECTTP + '"/></td><td>'  +
+					'<input type="text" name="imageWOW" value="'+ ad.imageWOW + '"/></td><td>'  +
 					ad.game + '</td><td>' +
 					'<button type="button" style="left: 10px;">delete</button></td></tr>' ;
 			
@@ -73,6 +86,9 @@
 		   $(this).append('<input type="hidden" name="ads[' + i + '].name" value="' +adList[i].name + '">' );
 		   $(this).append('<input type="hidden" name="ads[' + i + '].imageSQR" value="' +adList[i].imageSQR + '">' );
 		   $(this).append('<input type="hidden" name="ads[' + i + '].imageRECT" value="' +adList[i].imageRECT + '">' ); 
+		   $(this).append('<input type="hidden" name="ads[' + i + '].imageSQRTP" value="' +adList[i].imageSQRTP + '">' );
+		   $(this).append('<input type="hidden" name="ads[' + i + '].imageRECTTP" value="' +adList[i].imageRECTTP + '">' ); 
+		   $(this).append('<input type="hidden" name="ads[' + i + '].imageWOW" value="' +adList[i].imageWOW + '">' ); 
 		   $(this).append('<input type="hidden" name="ads[' + i + '].game" value="' +adList[i].game + '">' );
 		  }
 		});
@@ -84,6 +100,9 @@
 					ad2.name = "@ad.name";
 					ad2.imageSQR = "@ad.imageSQR";
 					ad2.imageRECT = "@ad.imageRECT";
+					ad2.imageSQRTP = "@ad.imageSQRTP";
+					ad2.imageRECTTP = "@ad.imageRECTTP";
+					ad2.imageWOW = "@ad.imageWOW";
 					ad2.game = "@ad.game";
 					adUl.append(addAd(ad2));
 				}

@@ -22,6 +22,12 @@ public class Advertisement {
     public String imageSQR;
     
     public String imageRECT;
+    
+    public String imageSQRTP;
+
+    public String imageRECTTP;
+    
+    public String imageWOW;
 
     @Enumerated(EnumType.STRING)
     public Game game;
